@@ -1,0 +1,75 @@
+# ✍️ n8n Workflow Publisher
+Automatically processes and validates n8n workflow JSON input, sending notifications for failures and success statuses while publishing to GitHub.
+
+---
+
+## Table of Contents
+- Overview
+- How It Works
+- Node Architecture
+- Tech Stack
+- Prerequisites
+- Configuration
+- Output
+- Edge Cases & Fallbacks
+
+---
+
+## Overview
+This workflow is triggered upon form submission, where users paste their n8n workflow JSON. It validates the JSON format and sends notifications based on the validation result.
+
+---
+
+## How It Works
+[Connection data unavailable — diagram cannot be generated]
+1. The workflow is triggered by the form submission.
+2. The JSON input is processed and validated through JavaScript logic.
+3. Depending on the success of the validation, either a failure notification is sent via Gmail or a message is sent to an OpenAI model for further processing.
+
+---
+
+## Node Architecture
+| Node Name                  | Type                                  | Role                                      |
+|---------------------------|---------------------------------------|-------------------------------------------|
+| On form submission        | n8n-nodes-base.formTrigger           | Form Trigger                              |
+| Code in JavaScript        | n8n-nodes-base.code                  | Processing and validation logic           |
+| If                        | n8n-nodes-base.if                    | Conditional branching based on validation  |
+| Send a message            | n8n-nodes-base.gmail                 | Sending failure email notification         |
+| Message a model           | @n8n/n8n-nodes-langchain.openAi      | Interfacing with OpenAI for processing    |
+
+---
+
+## Tech Stack
+| Component                 | Technology                               |
+|--------------------------|----------------------------------------|
+| Form Trigger             | n8n-nodes-base.formTrigger             |
+| Code                     | n8n-nodes-base.code                    |
+| Conditional Logic        | n8n-nodes-base.if                      |
+| Email Notification       | n8n-nodes-base.gmail                   |
+| OpenAI Integration       | @n8n/n8n-nodes-langchain.openAi        |
+
+---
+
+## Prerequisites
+- n8n instance v1.0+
+- Gmail OAuth2 API key required
+- OpenAI API key required
+
+---
+
+## Configuration
+Configure the Gmail and OpenAI API credentials in your n8n instance to ensure this workflow operates correctly.
+
+---
+
+## Output
+The workflow provides feedback through emails or integrates with OpenAI, detailing the success or failure of the workflow submission and validation process.
+
+---
+
+## Edge Cases & Fallbacks
+| Scenario                                   | Behavior                                                                               |
+|-------------------------------------------|---------------------------------------------------------------------------------------|
+| Missing required form fields              | The workflow fails to execute and sends an error notification email.                  |
+| Malformed workflow JSON input             | A failure email is sent to the user indicating the issue and potential causes.         |
+| JSON validation error                     | User receives email notification with instructions for troubleshooting.                 |
