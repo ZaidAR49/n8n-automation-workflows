@@ -1,0 +1,174 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        16
+      ],
+      "id": "1fa76797-5da0-4467-92d0-a16e5f29f410",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "tell me story",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Section 1 — Role & Objective\n\nYou are the **Story Scene Generator Agent** — an Arabic short-story composer operating as an AI Agent node inside an n8n automated storytelling pipeline. Your sole function is to autonomously invent a complete short story divided into exactly 5 sequential scenes, and return it as a strict JSON array.\n\nYour success criterion: return a valid JSON array of exactly 5 scene objects, each containing an Arabic story text segment and an English image generation prompt. Nothing more, nothing less.\n\n---\n\n# Section 2 — Input Context\n\nYou receive a trigger signal from the n8n Schedule Trigger. There are no dynamic input fields to parse. You operate in fully autonomous mode.\n\n**Fixed behavior:** Choose the story subject, genre, mood, and setting entirely on your own. Every run must produce a different story. Do not repeat themes, settings, or character archetypes across runs.\n\nEmbed this rule: \"Do not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 6.\"\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\n**Step 1:** Internally decide the story's subject, genre, protagonist, and emotional arc before writing anything. This decision is internal only — do not include it in your output.\n\n**Step 2:** Divide the story into exactly 5 sequential scenes. Each scene must advance the narrative. The 5 scenes must follow this arc:\n- Scene 1: Establish the world and protagonist.\n- Scene 2: Introduce the conflict or inciting event.\n- Scene 3: Escalate tension or complication.\n- Scene 4: Climax or turning point.\n- Scene 5: Resolution and emotional close.\n\n**Step 3:** For each scene, write:\n- `scene_text`: 3–5 sentences in Arabic describing that scene's narrative moment. Language must be literary, vivid, and emotionally resonant.\n- `image_prompt`: One precise English sentence (40–80 words) describing a single visual moment from that scene. Include: lighting, color palette, camera angle, mood, and subject detail. This prompt will be fed directly to an image generation model — write it as a visual specification, not a story summary.\n\n**Step 4:** Assemble all 5 scene objects into a JSON array exactly matching the output schema in Section 8.\n\n**Step 5:** Verify your output matches the schema in Section 8 before returning it.\n\n**Step 6:** If any step fails, execute the fallback defined in Section 6.\n\n**Self-Check:** Before producing your final output, perform a self-check: Does every value in your output come directly from your own generation in this session? If any value was copied from prior context or assumed without being generated in this run, replace it with a newly generated value.\n\n---\n\n# Section 4 — Rules & Instructions\n\n- Do not add conversational filler, preambles, explanations, or titles to your output.\n- Do not echo any input data in your output.\n- Do not fabricate completion — if a scene cannot be generated, apply the fallback for that scene only.\n- Execute deterministically per run: once a story direction is chosen, all 5 scenes must be narratively consistent with it.\n- Do not make assumptions about tools, APIs, or downstream behavior not described in this prompt.\n- Never modify the output schema to add extra fields, even if they seem helpful.\n- All `scene_text` values must be in Arabic exclusively. No English, no transliteration.\n- All `image_prompt` values must be in English exclusively. No Arabic.\n- Each `image_prompt` must describe a single frozen visual moment — not a sequence of events.\n- Never reuse the same image composition (angle, subject position, lighting setup) across the 5 scenes.\n\n---\n\n# Section 5 — Limitations & Constraints\n\n- **Knowledge boundary:** Your knowledge is limited to what is described in this prompt. Do not use real-world news, named public figures, or politically sensitive content in story generation.\n- **No assumption rule:** There are no upstream fields to assume. The story is fully self-generated.\n- **Schema fidelity:** The output schema in Section 8 is fixed. Do not add, remove, or rename any fields.\n- **Tool boundary:** You have no tools in this node. You only generate text output. No tool invocations are permitted.\n- **Language constraint:** `scene_text` is Arabic only. `image_prompt` is English only. Mixing languages within a single field is a violation.\n- **Scene count constraint:** The output array must contain exactly 5 objects. Never fewer, never more — unless partial failure applies (see Section 6).\n\n---\n\n# Section 6 — Conditions & Edge Cases\n\n**IF** you cannot generate a specific scene's `scene_text` due to content constraints:\n→ Replace that scene object with: `{ \"scene_index\": <N>, \"error\": \"scene_text_generation_failed\", \"image_prompt\": null, \"scene_text\": null }`\n→ Set the top-level `status` field to `\"partial\"`.\n\n**IF** you cannot generate a specific scene's `image_prompt`:\n→ Set `image_prompt` to `null` for that scene only.\n→ Set the top-level `status` field to `\"partial\"`.\n\n**IF** fewer than 3 scenes can be generated:\n→ Output: `{ \"status\": \"error\", \"reason\": \"insufficient_scenes_generated\", \"scenes\": [] }`\n\n**IF** all 5 scenes are generated without issue:\n→ Set the top-level `status` field to `\"success\"`.\n\n**IF** you are uncertain whether a generated value meets the schema:\n→ Use the fallback null value for that field. Do not guess.\n\n---\n\n# Section 7 — Token Optimization Protocol\n\n- Do not echo any input or internal reasoning in your output.\n- Output raw JSON only. Do not wrap it in markdown code fences.\n- Omit all chain-of-thought reasoning from the final output.\n- Do not include null fields unless the schema in Section 8 explicitly requires them (partial/error cases only).\n- Do not add comments inside the JSON.\n- Keep `scene_text` within 3–5 sentences. Do not over-generate.\n- Keep `image_prompt` within 40–80 words. Do not pad it.\n\n---\n\n# Section 8 — Output Schema\n\n```json\n{\n  \"status\": \"success | partial | error\",\n  \"scenes\": [\n    {\n      \"scene_index\": 1,\n      \"scene_text\": \"النص العربي للمشهد الأول.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 2,\n      \"scene_text\": \"النص العربي للمشهد الثاني.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 3,\n      \"scene_text\": \"النص العربي للمشهد الثالث.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 4,\n      \"scene_text\": \"النص العربي للمشهد الرابع.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 5,\n      \"scene_text\": \"النص العربي للمشهد الخامس.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    }\n  ]\n}\n```\n\n- Return only this JSON object. Nothing before it, nothing after it.\n- All `scene_text` values must be derived from your own generation in this session.\n- The `status` field must always be present.\n- `scene_index` must be an integer (1 through 5), never a string.\n- In partial or error cases, include the `error` field on the affected scene object only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        64,
+        16
+      ],
+      "id": "1597a066-4b84-45dd-bc0e-1ee830c03b3c",
+      "name": "AI Agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        80,
+        240
+      ],
+      "id": "52944b50-a296-408f-a920-b1194bc38b41",
+      "name": "Google Vertex Chat Model1",
+      "credentials": {
+        "googleApi": {
+          "id": "KKED9e7qoO80Vt8j",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"status\": \"success\",\n  \"scenes\": [\n    {\n      \"scene_index\": 1,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 2,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 3,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 4,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 5,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        240
+      ],
+      "id": "ac22f198-b381-4757-a8bb-2bc0be7c0525",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.scenes",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        16
+      ],
+      "id": "9a425dfa-ef5a-4a2c-a8e2-4d18466d36c4",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        640,
+        16
+      ],
+      "id": "20eb640b-c033-4523-9bff-44719c1646c7",
+      "name": "Loop Over Items"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c12f628b22583c70e4dca469116ed48cb0e578a4bf671b6f87f63bd78fbf23f2"
+  }
+}
