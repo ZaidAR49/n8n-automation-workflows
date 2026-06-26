@@ -1,61 +1,5 @@
 {
-  "name": "Arabic Story Storytelling Pipeline",
   "nodes": [
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash-image:generateContent",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "key",
-              "value": "AQ......"
-            }
-          ]
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \" {{ $json.image_prompt }} \"\n        }\n      ]\n    }\n  ]\n}",
-        "options": {}
-      },
-      "name": "Vertex AI HTTP Request",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        864,
-        -64
-      ],
-      "id": "a2f4052a-2219-464c-b13f-1e12c0b3d43c",
-      "retryOnFail": true,
-      "waitBetweenTries": 5000
-    },
-    {
-      "parameters": {
-        "operation": "toBinary",
-        "sourceProperty": "extracted_base64",
-        "options": {
-          "fileName": "=image{{ $('Loop Over Items').item.json.scene_index }}"
-        }
-      },
-      "type": "n8n-nodes-base.convertToFile",
-      "typeVersion": 1.1,
-      "position": [
-        1312,
-        -64
-      ],
-      "id": "ac69165c-b4ba-4674-ac55-4445676398a2",
-      "name": "Convert to File"
-    },
     {
       "parameters": {
         "rule": {
@@ -69,10 +13,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        -160,
-        16
+        0,
+        -416
       ],
-      "id": "1fa76797-5da0-4467-92d0-a16e5f29f410",
+      "id": "79ecbb09-006b-4ff0-82a6-3d3d93c611af",
       "name": "Schedule Trigger"
     },
     {
@@ -81,16 +25,16 @@
         "text": "tell me story",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "=# Section 1 — Role & Objective\n\nYou are the **Story Scene Generator Agent** — an Arabic short-story composer operating as an AI Agent node inside an n8n automated storytelling pipeline. Your sole function is to autonomously invent a complete short story divided into exactly 5 sequential scenes, and return it as a strict JSON array.\n\nYour success criterion: return a valid JSON array of exactly 5 scene objects, each containing an Arabic story text segment and an English image generation prompt. Nothing more, nothing less.\n\n---\n\n# Section 2 — Input Context\n\nYou receive a trigger signal from the n8n Schedule Trigger. There are no dynamic input fields to parse. You operate in fully autonomous mode.\n\n**Fixed behavior:** Choose the story subject, genre, mood, and setting entirely on your own. Every run must produce a different story. Do not repeat themes, settings, or character archetypes across runs.\n\nEmbed this rule: \"Do not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 6.\"\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\n**Step 1:** Internally decide the story's subject, genre, protagonist, and emotional arc before writing anything. This decision is internal only — do not include it in your output.\n\n**Step 2:** Divide the story into exactly 5 sequential scenes. Each scene must advance the narrative. The 5 scenes must follow this arc:\n- Scene 1: Establish the world and protagonist.\n- Scene 2: Introduce the conflict or inciting event.\n- Scene 3: Escalate tension or complication.\n- Scene 4: Climax or turning point.\n- Scene 5: Resolution and emotional close.\n\n**Step 3:** For each scene, write:\n- `scene_text`: 3–5 sentences in Arabic describing that scene's narrative moment. Language must be literary, vivid, and emotionally resonant.\n- `image_prompt`: One precise English sentence (40–80 words) describing a single visual moment from that scene. Include: lighting, color palette, camera angle, mood, and subject detail. This prompt will be fed directly to an image generation model — write it as a visual specification, not a story summary.\n\n**Step 4:** Assemble all 5 scene objects into a JSON array exactly matching the output schema in Section 8.\n\n**Step 5:** Verify your output matches the schema in Section 8 before returning it.\n\n**Step 6:** If any step fails, execute the fallback defined in Section 6.\n\n**Self-Check:** Before producing your final output, perform a self-check: Does every value in your output come directly from your own generation in this session? If any value was copied from prior context or assumed without being generated in this run, replace it with a newly generated value.\n\n---\n\n# Section 4 — Rules & Instructions\n\n- Do not add conversational filler, preambles, explanations, or titles to your output.\n- Do not echo any input data in your output.\n- Do not fabricate completion — if a scene cannot be generated, apply the fallback for that scene only.\n- Execute deterministically per run: once a story direction is chosen, all 5 scenes must be narratively consistent with it.\n- Do not make assumptions about tools, APIs, or downstream behavior not described in this prompt.\n- Never modify the output schema to add extra fields, even if they seem helpful.\n- All `scene_text` values must be in Arabic exclusively. No English, no transliteration.\n- All `image_prompt` values must be in English exclusively. No Arabic.\n- Each `image_prompt` must describe a single frozen visual moment — not a sequence of events.\n- Never reuse the same image composition (angle, subject position, lighting setup) across the 5 scenes.\n\n---\n\n# Section 5 — Limitations & Constraints\n\n- **Knowledge boundary:** Your knowledge is limited to what is described in this prompt. Do not use real-world news, named public figures, or politically sensitive content in story generation.\n- **No assumption rule:** There are no upstream fields to assume. The story is fully self-generated.\n- **Schema fidelity:** The output schema in Section 8 is fixed. Do not add, remove, or rename any fields.\n- **Tool boundary:** You have no tools in this node. You only generate text output. No tool invocations are permitted.\n- **Language constraint:** `scene_text` is Arabic only. `image_prompt` is English only. Mixing languages within a single field is a violation.\n- **Scene count constraint:** The output array must contain exactly 5 objects. Never fewer, never more — unless partial failure applies (see Section 6).\n\n---\n\n# Section 6 — Conditions & Edge Cases\n\n**IF** you cannot generate a specific scene's `scene_text` due to content constraints:\n→ Replace that scene object with: `{ \"scene_index\": <N>, \"error\": \"scene_text_generation_failed\", \"image_prompt\": null, \"scene_text\": null }`\n→ Set the top-level `status` field to `\"partial\"`.\n\n**IF** you cannot generate a specific scene's `image_prompt`:\n→ Set `image_prompt` to `null` for that scene only.\n→ Set the top-level `status` field to `\"partial\"`.\n\n**IF** fewer than 3 scenes can be generated:\n→ Output: `{ \"status\": \"error\", \"reason\": \"insufficient_scenes_generated\", \"scenes\": [] }`\n\n**IF** all 5 scenes are generated without issue:\n→ Set the top-level `status` field to `\"success\"`.\n\n**IF** you are uncertain whether a generated value meets the schema:\n→ Use the fallback null value for that field. Do not guess.\n\n---\n\n# Section 7 — Token Optimization Protocol\n\n- Do not echo any input or internal reasoning in your output.\n- Output raw JSON only. Do not wrap it in markdown code fences.\n- Omit all chain-of-thought reasoning from the final output.\n- Do not include null fields unless the schema in Section 8 explicitly requires them (partial/error cases only).\n- Do not add comments inside the JSON.\n- Keep `scene_text` within 3–5 sentences. Do not over-generate.\n- Keep `image_prompt` within 40–80 words. Do not pad it.\n\n---\n\n# Section 8 — Output Schema\n\n```json\n{\n  \"status\": \"success | partial | error\",\n  \"scenes\": [\n    {\n      \"scene_index\": 1,\n      \"scene_text\": \"النص العربي للمشهد الأول.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 2,\n      \"scene_text\": \"النص العربي للمشهد الثاني.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 3,\n      \"scene_text\": \"النص العربي للمشهد الثالث.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 4,\n      \"scene_text\": \"النص العربي للمشهد الرابع.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 5,\n      \"scene_text\": \"النص العربي للمشهد الخامس.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    }\n  ]\n}\n```\n\n- Return only this JSON object. Nothing before it, nothing after it.\n- All `scene_text` values must be derived from your own generation in this session.\n- The `status` field must always be present.\n- `scene_index` must be an integer (1 through 5), never a string.\n- In partial or error cases, include the `error` field on the affected scene object only."
+          "systemMessage": "# Section 1 — Role & Objective\n\nYou are the **Story Scene Generator Agent** — an Arabic short-story composer operating as an AI Agent node inside an n8n automated storytelling pipeline. Your sole function is to autonomously invent a complete short story divided into exactly 5 sequential scenes, and return it as a strict JSON array.\n\nYour success criterion: return a valid JSON array of exactly 5 scene objects, each containing an Arabic story text segment and an English image generation prompt. Nothing more, nothing less.\n\n---\n\n# Section 2 — Input Context\n\nYou receive a trigger signal from the n8n Schedule Trigger. There are no dynamic input fields to parse. You operate in fully autonomous mode.\n\n**Fixed behavior:** Choose the story subject, genre, mood, and setting entirely on your own. Every run must produce a different story. Do not repeat themes, settings, or character archetypes across runs.\n\nEmbed this rule: \"Do not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 6.\"\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\n**Step 1:** Internally decide the story's subject, genre, protagonist, and emotional arc before writing anything. This decision is internal only — do not include it in your output.\n\n**Step 2:** Divide the story into exactly 5 sequential scenes. Each scene must advance the narrative. The 5 scenes must follow this arc:\n- Scene 1: Establish the world and protagonist.\n- Scene 2: Introduce the conflict or inciting event.\n- Scene 3: Escalate tension or complication.\n- Scene 4: Climax or turning point.\n- Scene 5: Resolution and emotional close.\n\n**Step 3:** For each scene, write:\n- `scene_text`: 3–5 sentences in Arabic describing that scene's narrative moment. Language must be literary, vivid, and emotionally resonant.\n- `image_prompt`: One precise English sentence (40–80 words) describing a single visual moment from that scene. Include: lighting, color palette, camera angle, mood, and subject detail. This prompt will be fed directly to an image generation model — write it as a visual specification, not a story summary.\n\n**Step 4:** Assemble all 5 scene objects into a JSON array exactly matching the output schema in Section 8.\n\n**Step 5:** Verify your output matches the schema in Section 8 before returning it.\n\n**Step 6:** If any step fails, execute the fallback defined in Section 6.\n\n**Self-Check:** Before producing your final output, perform a self-check: Does every value in your output come directly from your own generation in this session? If any value was copied from prior context or assumed without being generated in this run, replace it with a newly generated value.\n\n---\n\n# Section 4 — Rules & Instructions\n\n- Do not add conversational filler, preambles, explanations, or titles to your output.\n- Do not echo any input data in your output.\n- Do not fabricate completion — if a scene cannot be generated, apply the fallback for that scene only.\n- Execute deterministically per run: once a story direction is chosen, all 5 scenes must be narratively consistent with it.\n- Do not make assumptions about tools, APIs, or downstream behavior not described in this prompt.\n- Never modify the output schema to add extra fields, even if they seem helpful.\n- All `scene_text` values must be in Arabic exclusively. No English, no transliteration.\n- All `image_prompt` values must be in English exclusively. No Arabic.\n- Each `image_prompt` must describe a single frozen visual moment — not a sequence of events.\n- Never reuse the same image composition (angle, subject position, lighting setup) across the 5 scenes.\n\n---\n\n# Section 5 — Limitations & Constraints\n\n- **Knowledge boundary:** Your knowledge is limited to what is described in this prompt. Do not use real-world news, named public figures, or politically sensitive content in story generation.\n- **No assumption rule:** There are no upstream fields to assume. The story is fully self-generated.\n- **Schema fidelity:** The output schema in Section 8 is fixed. Do not add, remove, or rename any fields.\n- **Tool boundary:** You have no tools in this node. You only generate text output. No tool invocations are permitted.\n- **Language constraint:** `scene_text` is Arabic only. `image_prompt` is English only. Mixing languages within a single field is a violation.\n- **Scene count constraint:** The output array must contain exactly 5 objects. Never fewer, never more — unless partial failure applies (see Section 6).\n\n---\n\n# Section 6 — Conditions & Edge Cases\n\n**IF** you cannot generate a specific scene's `scene_text` due to content constraints:\n→ Replace that scene object with: `{ \"scene_index\": <N>, \"error\": \"scene_text_generation_failed\", \"image_prompt\": null, \"scene_text\": null }`\n→ Set the top-level `status` field to `\"partial\"`.\n\n**IF** you cannot generate a specific scene's `image_prompt`:\n→ Set `image_prompt` to `null` for that scene only.\n→ Set the top-level `status` field to `\"partial\"`.\n\n**IF** fewer than 3 scenes can be generated:\n→ Output: `{ \"status\": \"error\", \"reason\": \"insufficient_scenes_generated\", \"scenes\": [] }`\n\n**IF** all 5 scenes are generated without issue:\n→ Set the top-level `status` field to `\"success\"`.\n\n**IF** you are uncertain whether a generated value meets the schema:\n→ Use the fallback null value for that field. Do not guess.\n\n---\n\n# Section 7 — Token Optimization Protocol\n\n- Do not echo any input or internal reasoning in your output.\n- Output raw JSON only. Do not wrap it in markdown code fences.\n- Omit all chain-of-thought reasoning from the final output.\n- Do not include null fields unless the schema in Section 8 explicitly requires them (partial/error cases only).\n- Do not add comments inside the JSON.\n- Keep `scene_text` within 3–5 sentences. Do not over-generate.\n- Keep `image_prompt` within 40–80 words. Do not pad it.\n\n---\n\n# Section 8 — Output Schema\n\n```json\n{\n  \"status\": \"success | partial | error\",\n  \"scenes\": [\n    {\n      \"scene_index\": 1,\n      \"scene_text\": \"النص العربي للمشهد الأول.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 2,\n      \"scene_text\": \"النص العربي للمشهد الثاني.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 3,\n      \"scene_text\": \"النص العربي للمشهد الثالث.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 4,\n      \"scene_text\": \"النص العربي للمشهد الرابع.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    },\n    {\n      \"scene_index\": 5,\n      \"scene_text\": \"النص العربي للمشهد الخامس.\",\n      \"image_prompt\": \"A single visual moment described in English with lighting, palette, angle, mood, and subject detail.\"\n    }\n  ]\n}\n```\n\n- Return only this JSON object. Nothing before it, nothing after it.\n- All `scene_text` values must be derived from your own generation in this session.\n- The `status` field must always be present.\n- `scene_index` must be an integer (1 through 5), never a string.\n- In partial or error cases, include the `error` field on the affected scene object only."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        64,
-        16
+        224,
+        -416
       ],
-      "id": "1597a066-4b84-45dd-bc0e-1ee830c03b3c",
+      "id": "7b802d39-dece-4d5c-8baf-edfe81454484",
       "name": "AI Agent",
       "retryOnFail": true
     },
@@ -101,22 +45,129 @@
           "value": "n8n-gemini-app-500118",
           "mode": "id"
         },
+        "modelName": "gemini-2.5-pro",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
       "typeVersion": 1,
       "position": [
-        80,
-        240
+        208,
+        -192
       ],
-      "id": "52944b50-a296-408f-a920-b1194bc38b41",
-      "name": "Google Vertex Chat Model1",
+      "id": "a793b457-46b6-45f0-9287-cb3c8004f6b8",
+      "name": "Google Vertex Chat Model",
       "credentials": {
         "googleApi": {
-          "id": "KKED9e7qoO80Vt8j",
-          "name": "Google Service Account account"
+          "id": "d5phTJN3rJn5z0U9",
+          "name": "Google Service Account account 2"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"status\": \"success\",\n  \"scenes\": [\n    {\n      \"scene_index\": 1,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 2,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 3,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 4,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 5,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        -192
+      ],
+      "id": "5981144a-8480-4691-b5df-bbdb4b41ba8d",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.scenes",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -416
+      ],
+      "id": "70104eeb-45d3-4a0c-b140-da49341da829",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        800,
+        -416
+      ],
+      "id": "7450402a-4834-4715-9b05-448fbd17bd83",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash-image:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \" {{ $json.image_prompt }} \"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1024,
+        -416
+      ],
+      "id": "8a7d0839-9f8f-4743-9022-40fefdcc00fc",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "j6uYuc5td47uOy44",
+          "name": "Query Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "=image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1472,
+        -416
+      ],
+      "id": "fa6713ad-1841-4397-b2b9-0a82f31911c1",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b097b2d3-85fb-49c2-99b9-ec3960c15c69",
+              "name": "image",
+              "value": "={{ $json.candidates[0].content.parts[0].inlineData.data}} ||{{ $json.candidates[0].content.parts[1].inlineData.data}} ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        -416
+      ],
+      "id": "cd39991d-a7de-40de-83b5-1dbd4cef4a7f",
+      "name": "Edit Fields"
     },
     {
       "parameters": {
@@ -127,12 +178,12 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1760,
-        -64
+        1920,
+        -416
       ],
-      "id": "e9e2675d-f4ac-4d63-8e65-469711b467dc",
-      "name": "Send a text message",
-      "webhookId": "8d01492e-9845-4f84-826a-a949584b9c40",
+      "id": "d7d4ef8e-3c70-454f-bb7a-9a76a13684e9",
+      "name": "send text",
+      "webhookId": "39efcb54-4c8a-4790-aa2b-848c1a3fe298",
       "credentials": {
         "telegramApi": {
           "id": "LoVEMZWt5jjMO2uG",
@@ -150,58 +201,18 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1536,
-        -64
+        1696,
+        -416
       ],
-      "id": "0ef85fd2-054d-4605-82ff-c0bddd62c0e0",
+      "id": "22e36f6b-1553-421e-9767-c7cbd482e78e",
       "name": "Send a photo message",
-      "webhookId": "28acbc8d-46ce-4bf4-8f27-0012bcb2419e",
+      "webhookId": "2b9521dc-4868-4358-b03a-db1d58b92185",
       "credentials": {
         "telegramApi": {
           "id": "LoVEMZWt5jjMO2uG",
           "name": "Telegram account"
         }
       }
-    },
-    {
-      "parameters": {
-        "jsonSchemaExample": "{\n  \"status\": \"success\",\n  \"scenes\": [\n    {\n      \"scene_index\": 1,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 2,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 3,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 4,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    },\n    {\n      \"scene_index\": 5,\n      \"scene_text\": \"النص العربي هنا...\",\n      \"image_prompt\": \"English image prompt here...\"\n    }\n  ]\n}"
-      },
-      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-      "typeVersion": 1.3,
-      "position": [
-        208,
-        240
-      ],
-      "id": "ac22f198-b381-4757-a8bb-2bc0be7c0525",
-      "name": "Structured Output Parser"
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "output.scenes",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        416,
-        16
-      ],
-      "id": "9a425dfa-ef5a-4a2c-a8e2-4d18466d36c4",
-      "name": "Split Out"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        640,
-        16
-      ],
-      "id": "20eb640b-c033-4523-9bff-44719c1646c7",
-      "name": "Loop Over Items"
     },
     {
       "parameters": {
@@ -210,57 +221,12 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1984,
-        -64
+        2144,
+        -416
       ],
-      "id": "b30bc6ae-0fde-4e79-b9a6-6a4330c877fd",
+      "id": "cf3e0d37-edc5-4300-b850-0b204f8e1ee5",
       "name": "Wait",
-      "webhookId": "e9638793-4802-4bd6-af77-35d869859727"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "d90731c9-847e-465f-b9a6-80be934979a8",
-              "name": "extracted_base64",
-              "value": "={{ $json.candidates[0].content.parts[0].inlineData.data}} ||{{ $json.candidates[0].content.parts[1].inlineData.data}} ",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1088,
-        -64
-      ],
-      "id": "e8a887ca-fefc-48ed-bc25-54a06e798930",
-      "name": "Edit Fields"
-    },
-    {
-      "parameters": {
-        "chatId": "-5326491438",
-        "text": "=-----------النهاية------------",
-        "additionalFields": {}
-      },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        2432,
-        16
-      ],
-      "id": "61e0e2d7-9ce4-4b83-bbe9-8099d6ccd122",
-      "name": "the end message",
-      "webhookId": "8d01492e-9845-4f84-826a-a949584b9c40",
-      "credentials": {
-        "telegramApi": {
-          "id": "LoVEMZWt5jjMO2uG",
-          "name": "Telegram account"
-        }
-      }
+      "webhookId": "a7b272e4-a02b-4c59-8d90-78f42cef790f"
     },
     {
       "parameters": {
@@ -273,9 +239,9 @@
           },
           "conditions": [
             {
-              "id": "0aac6420-933b-4551-9d8f-6b8ec74a47ee",
+              "id": "79c9c8aa-579f-49eb-ac28-11c8b934b9a6",
               "leftValue": "={{ $('Loop Over Items').context.noItemsLeft === true }}",
-              "rightValue": " true ",
+              "rightValue": "",
               "operator": {
                 "type": "boolean",
                 "operation": "true",
@@ -290,37 +256,36 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2208,
-        16
+        2368,
+        -416
       ],
-      "id": "00342247-ef7d-4e45-92cf-4633897c733e",
+      "id": "588acf5a-2e41-46d0-bb7c-481f784d6f70",
       "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "-5326491438",
+        "text": "----------النهاية--------------",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2624,
+        -432
+      ],
+      "id": "90b19f71-d043-49d6-a1ef-09b9ceaa3c0a",
+      "name": "the End",
+      "webhookId": "39efcb54-4c8a-4790-aa2b-848c1a3fe298",
+      "credentials": {
+        "telegramApi": {
+          "id": "LoVEMZWt5jjMO2uG",
+          "name": "Telegram account"
+        }
+      }
     }
   ],
-  "pinData": {},
   "connections": {
-    "Vertex AI HTTP Request": {
-      "main": [
-        [
-          {
-            "node": "Edit Fields",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Convert to File": {
-      "main": [
-        [
-          {
-            "node": "Send a photo message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Schedule Trigger": {
       "main": [
         [
@@ -332,23 +297,23 @@
         ]
       ]
     },
-    "Google Vertex Chat Model1": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "AI Agent": {
       "main": [
         [
           {
             "node": "Split Out",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -381,40 +346,29 @@
         [],
         [
           {
-            "node": "Vertex AI HTTP Request",
+            "node": "HTTP Request",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send a text message": {
+    "HTTP Request": {
       "main": [
         [
           {
-            "node": "Wait",
+            "node": "Edit Fields",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send a photo message": {
+    "Convert to File": {
       "main": [
         [
           {
-            "node": "Send a text message",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait": {
-      "main": [
-        [
-          {
-            "node": "If",
+            "node": "Send a photo message",
             "type": "main",
             "index": 0
           }
@@ -432,16 +386,44 @@
         ]
       ]
     },
-    "the end message": {
+    "send text": {
       "main": [
-        []
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "send text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "If": {
       "main": [
         [
           {
-            "node": "the end message",
+            "node": "the End",
             "type": "main",
             "index": 0
           }
@@ -454,20 +436,16 @@
           }
         ]
       ]
+    },
+    "the End": {
+      "main": [
+        []
+      ]
     }
   },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
-  },
-  "versionId": "b9de70b7-26c5-45d8-b1a9-708d2ae0ea56",
+  "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "c12f628b22583c70e4dca469116ed48cb0e578a4bf671b6f87f63bd78fbf23f2"
-  },
-  "nodeGroups": [],
-  "id": "XyjtkaGnMgQZqfLe",
-  "tags": []
+  }
 }
