@@ -1,0 +1,262 @@
+{
+  "name": "Aggregated Job Listings API",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://remotive.com/api/remote-jobs?limit=10",
+        "options": {}
+      },
+      "id": "54d75251-5ac5-4aea-bd45-86cf0830986e",
+      "name": "HTTP Request - Remotive",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://remoteok.com/api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "de6efde1-239f-4272-88bb-781353ff82f1",
+      "name": "HTTP Request - RemoteOK",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        736,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "52ca14fe-143b-425f-ab77-6f11d67efff0",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        960,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\nfor (const item of $input.all()) {\n  const json = item.json;\n\n  // Remotive: { jobs: [...] }\n  if (json && Array.isArray(json.jobs)) {\n    for (const job of json.jobs) {\n      output.push({\n        title: job.title || \"Untitled\",\n        company: job.company_name || \"Unknown\",\n        url: job.url || \"\",\n        source: \"Remotive\",\n        tags: Array.isArray(job.tags) ? job.tags : []\n      });\n    }\n    continue;\n  }\n\n  // RemoteOK's first array element is a legal notice, not a job - skip it\n  if (json && json.legal) {\n    continue;\n  }\n\n  // RemoteOK job object\n  if (json && json.position && json.company) {\n    output.push({\n      title: json.position,\n      company: json.company,\n      url: json.url ? `https://remoteok.com${json.url}` : (json.apply_url || \"\"),\n      source: \"RemoteOK\",\n      tags: Array.isArray(json.tags) ? json.tags : []\n    });\n    continue;\n  }\n\n\n  // FIX: this branch was missing entirely, so every Jordan Government\n  // job silently disappeared here regardless of the keyword filter\n  if (json && json.source === \"SPAC Jordan\") {\n    output.push({\n      title: json.title || \"Untitled\",\n      company: json.company || \"Government of Jordan\",\n      url: json.url || \"\",\n      source: \"SPAC Jordan\",\n      tags: []\n    });\n    continue;\n  }\n}\n\nreturn output.map(o => ({ json: o }));"
+      },
+      "id": "4bc30eb3-c131-40fe-922e-c86d62dad01a",
+      "name": "Normalize & Aggregate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const TECH_KEYWORDS = {\n  roles: [\n    // English Roles\n    \"software engineer\", \"software developer\", \"web developer\", \"frontend developer\",\n    \"front-end developer\", \"backend developer\", \"back-end developer\", \"full stack developer\",\n    \"full-stack developer\", \"qa engineer\", \"quality assurance\", \"automation engineer\",\n    \"test engineer\", \"software tester\",\n    // Arabic Roles\n    \"مطور\", \"مبرمج\", \"مهندس برمجيات\", \"مهندس حاسوب\", \"مطور ويب\", \"مطور واجهات\",\n    \"فحص برمجيات\", \"توكيد جودة\", \"ضبط الجودة\", \"أخصائي جودة\", \"مهندس أتمتة\", \"فاحص جودة\", \"مبرمج مساعد\"\n  ],\n  languages: [\n    \"javascript\", \"typescript\", \"sql\", \"جافاسكربت\", \"تايب سكربت\", \"جافا سكربت\"\n  ],\n  frontend: [\n    \"react\", \"reactjs\", \"react.js\", \"next.js\", \"nextjs\", \"html5\", \"css3\",\n    \"tailwind\", \"tailwindcss\", \"رياكت\"\n  ],\n  backend: [\n    \"node.js\", \"nodejs\", \"express.js\", \"expressjs\", \"postgresql\", \"postgres\",\n    \"supabase\", \"rest api\", \"نود\"\n  ],\n  testing_qa: [\n    \"cypress\", \"appium\", \"selenium\", \"postman\", \"jmeter\", \"swagger\",\n    \"api testing\", \"manual testing\", \"automation testing\", \"اختبار برمجيات\", \"فحص الجودة\"\n  ],\n  cloud_tools: [\n    \"aws\", \"git\", \"github\", \"figma\", \"cloudinary\", \"vercel\", \"apify\"\n  ],\n  general: [\n    \"software\", \"software development\", \"web development\", \"automation\", \"n8n\",\n    \"أتمتة\", \"برمجة\", \"تقنية المعلومات\"\n  ]\n};\n\nfunction escapeRegex(str) {\n  return str.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n}\n\nconst ALL_KEYWORDS = Object.values(TECH_KEYWORDS).flat();\n\n// FIX: plain \\b only recognizes ASCII word chars, so it never matched\n// around Arabic letters. \\p{L}/\\p{N} lookaround (with the 'u' flag)\n// makes word boundaries work for Arabic too.\nconst KEYWORD_REGEX = new RegExp(\n  '(?<![\\\\p{L}\\\\p{N}])(' + ALL_KEYWORDS.map(escapeRegex).join('|') + ')(?![\\\\p{L}\\\\p{N}])',\n  'giu'\n);\n\nconst results = [];\n\nfor (const item of $input.all()) {\n  const job = item.json;\n  const tagsText = Array.isArray(job.tags) ? job.tags.join(' ') : '';\n  const searchText = `${job.title || ''} ${job.company || ''} ${tagsText}`.toLowerCase();\n\n  const matches = searchText.match(KEYWORD_REGEX) || [];\n  const uniqueMatches = [...new Set(matches.map(m => m.toLowerCase()))];\n  const isTechJob = uniqueMatches.length > 0 ? 1 : 0;\n\n  results.push({\n    json: {\n      ...job,\n      isTechJob,\n      matchedKeywords: uniqueMatches\n    }\n  });\n}\n\nreturn results.filter(r => r.json.isTechJob === 1);"
+      },
+      "id": "d9f09f98-3b4d-443b-bb75-aebe75172255",
+      "name": "Validate Tech Jobs (Binary Filter)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "330fb20c-12eb-44fb-a2cd-85a2cacd5033",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1632,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://applyjobs.spac.gov.jo/Default2.aspx",
+        "options": {}
+      },
+      "id": "7e697f46-3b10-4564-9f56-75e00a583c95",
+      "name": "jordan Government",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "path": "946430df-d514-426c-88c0-d4e232b17ca7",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        288,
+        496
+      ],
+      "id": "d7a8d37f-c774-4bbd-943f-e06ed70ed499",
+      "name": "Webhook",
+      "webhookId": "946430df-d514-426c-88c0-d4e232b17ca7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the raw HTML string from the previous node\nconst htmlString = $input.first().json.data;\nconst jobsMap = new Map(); // JobID -> job object, prevents duplicates\n\n// Regex now also captures the numeric JobID separately\nconst regex = /<a\\s+href=\"(JobDet\\.aspx\\?JobID=(\\d+))\">([^<]+)<\\/a>/g;\nlet match;\n\nwhile ((match = regex.exec(htmlString)) !== null) {\n    const path = match[1].trim();\n    const jobId = match[2];\n    let fullText = match[3].trim();\n\n    // Skip the generic \"تفاصيل\" (Details) link — it's a duplicate\n    // of the real title link that already appears for this same JobID\n    if (fullText === 'تفاصيل') {\n        continue;\n    }\n\n    // The portal formats text like: \"-وظائف المساندة... / محافظة جرش / وزارة الثقافه\"\n    // Splitting by '/' separates the Ministry (company) from the Title\n    const parts = fullText.split('/');\n\n    let company = \"Government of Jordan\";\n    let title = fullText;\n    if (parts.length > 1) {\n        company = parts.pop().trim();       // last part = Ministry\n        title = parts.join(' / ').trim();   // rest = job title\n\n        if (title.startsWith('-')) {\n            title = title.substring(1).trim();\n        }\n    }\n\n    // Keep only the first (real) entry per JobID\n    if (!jobsMap.has(jobId)) {\n        jobsMap.set(jobId, {\n            title: title,\n            company: company,\n            url: `https://applyjobs.spac.gov.jo/${path}`,\n            source: \"SPAC Jordan\"\n        });\n    }\n}\n\n// Return the deduplicated array in the format n8n expects\nreturn Array.from(jobsMap.values()).map(job => ({ json: job }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        688
+      ],
+      "id": "8ae453cc-1441-46a3-9f4c-e2cdd0ecec09",
+      "name": "Extract from HTML"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request - Remotive": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - RemoteOK": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Validate Tech Jobs (Binary Filter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Tech Jobs (Binary Filter)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "jordan Government": {
+      "main": [
+        [
+          {
+            "node": "Extract from HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Remotive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request - RemoteOK",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "jordan Government",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from HTML": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8c83666c-2fa4-4a55-8c9e-11efbccd77b8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3b17fc8fda52f1536873eae51fd330efe441dcec4ab88062e1c81b64db2cef85"
+  },
+  "nodeGroups": [],
+  "id": "il2acD7piJiTXKB9",
+  "tags": []
+}

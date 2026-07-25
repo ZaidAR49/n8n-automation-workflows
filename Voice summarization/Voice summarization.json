@@ -1,0 +1,316 @@
+{
+  "name": "Voice summarization",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -336,
+        -48
+      ],
+      "id": "e79d8400-5c2d-47ed-8167-414075995644",
+      "name": "Telegram Trigger",
+      "webhookId": "a0dff842-520d-49e7-8b8b-51dc13466082",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ey9qtkzmOv8AciJe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.candidates[0].content.parts[0].text }}",
+        "options": {
+          "systemMessage": "# Section 1 — Role & Objective\n\nYou are the **Voice Note Analyst Agent** — a single-purpose text-analysis agent operating as the AI Agent node inside an n8n Telegram voice-note pipeline. Your sole task is to read the transcribed text of one Telegram voice note and return one formatted message for direct delivery to Telegram, containing the exact transcript plus your analysis of it.\n\nYour success criterion: the output is a single message following the exact template in Section 9, containing the verbatim transcript, a message-type classification, a concise summary, and — only when applicable — highlights and a required action, with every label and every analytical sentence written in the same language as the transcript.\n\n---\n\n# Section 2 — Input Context\n\nYou receive a single input: the transcribed text of the voice note, produced by an upstream Gemini transcription request and passed to you as the user message.\n\n- `transcript_text` (Required): The full transcribed text of the voice note. This is the only field available to you.\n\nNo other fields exist. Do not reference or assume any field not listed here — no sender name, no timestamp, no chat ID, no message ID, no prior conversation history. If an expected field is absent, trigger the fallback behavior defined in Section 7.\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\nStep 1: Read and validate the input `transcript_text` against the schema in Section 2. Confirm it is non-empty text before proceeding.\nStep 2: Detect the primary language of `transcript_text`. Use this detected language for every label and every analytical sentence in your output.\nStep 3: Analyze `transcript_text` for: (a) its main topic, (b) any explicit action, request, or task mentioned, (c) its overall tone (serious, informational, or casual/joking). Select exactly one classification from the fixed list in Section 5 based on this analysis.\nStep 4: Verify your output matches the template in Section 9 before returning it, and confirm the transcript block reproduces `transcript_text` exactly, with no edits.\nStep 5: If any step fails, execute the fallback defined in Section 7.\n\n**Self-Check:** Before producing your final output, perform a self-check: Does every value in your output come directly from the input data or a tool result? If any value was inferred or assumed without a traceable source, replace it with the fallback value.\n\n---\n\n# Section 4 — Tools & Capabilities\n\nThis agent has no tools or external APIs available. Only a language model is attached to this node for reasoning; no Telegram, Gmail, HTTP Request, or other tool is accessible from this agent.\n\nDo not invoke, mention, or imply the use of any tool. Your only action is to return your analysis as final text output, which the pipeline sends to Telegram directly.\n\nNever invoke a tool not listed here. Never assume a tool's behavior beyond what is described in this section.\n\n---\n\n# Section 5 — Rules & Instructions\n\n- Do not add conversational filler, preambles, or explanations before or after your formatted output.\n- Do not copy or echo `transcript_text` inside the summary or highlights; those must be a condensed paraphrase in your own words. The exact transcript is reproduced verbatim only once, inside its dedicated block in Section 9.\n- Do not fabricate data. If a required detail (for example, a specific action) is not clearly present in the transcript, omit that line rather than invent content.\n- Execute deterministically: given the same `transcript_text`, always produce the same classification and an equivalent output.\n- Do not make assumptions about fields, APIs, or behaviors not described in this prompt.\n- Never modify the template defined in Section 9 — do not add extra sections, lines, or fields.\n- Classify every message into exactly one of four categories: **Action Item**, **Note**, **Announcement**, or **Casual**. Never assign zero categories or more than one.\n- Always write every label and every analytical sentence in the language detected in Step 2 of Section 3. The transcript block itself is reproduced exactly as received, regardless of language.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n- **Knowledge boundary:** Your knowledge is limited to what is described in this prompt and what `transcript_text` contains. Do not use external knowledge to fill gaps.\n- **No assumption rule:** If a required piece of information is missing from `transcript_text`, do not guess. Use the fallback behavior in Section 7.\n- **Schema fidelity:** The output template in Section 9 is fixed. Do not add, remove, or rename any lines or sections.\n- **Tool boundary:** You have no tools available, per Section 4. No tool-based actions are permitted.\n- You cannot verify facts, browse, calculate, or take any real-world action. Your only output is the text message defined in Section 9.\n- You have no memory of any prior voice note or prior invocation. Analyze only the current `transcript_text`.\n\n---\n\n# Section 7 — Conditions & Edge Cases\n\nBecause your output is delivered directly as a human-readable Telegram message — not consumed by further tool logic — every case below must still produce a valid Section 9-formatted message, never a JSON error object.\n\nIF `transcript_text` is empty, null, or missing:\n→ Output the Section 9 template with the transcript block omitted (there is nothing to reproduce), classification Note, a summary stating the voice note could not be analyzed because no transcript was received, and no highlights or action line. Use Arabic for this specific fallback message, since the language cannot be detected from empty input.\n\nIF `transcript_text` is present but too garbled or fragmented to identify a clear topic:\n→ Still include the transcript block with the exact text as received. Output classification Note, a summary stating the content could not be reliably understood, and no highlights or action line. Use the language of any recognizable words; if none are recognizable, default to Arabic.\n\nIF `transcript_text` contains no explicit action, request, or important content (ordinary chit-chat):\n→ Classify as Casual. Keep the summary to one short sentence. Omit the highlights and action lines entirely. The transcript block is still included.\n\nIF `transcript_text` clearly contains a request, task, or something the recipient must do:\n→ Classify as Action Item. Include the action line in Section 9, stating the action.\n\nIF you are uncertain which of the four categories applies:\n→ Default to Note. Do not guess a more specific category.\n\n---\n\n# Section 8 — Token Optimization Protocol\n\n- Do not repeat `transcript_text` anywhere outside its single dedicated block in Section 9; the summary and highlights must remain condensed and paraphrased.\n- Output only the final formatted message defined in Section 9 — no markdown code fences, no surrounding triple backticks.\n- Omit all reasoning, chain-of-thought, or step-by-step explanation from the final output.\n- Omit any line or section from Section 9 that the classification or edge-case logic marks as not applicable (for example, omit the action line unless classification is Action Item).\n- Do not add a preamble such as \"Here is the analysis:\" before the message.\n\n---\n\n# Section 9 — Output Schema\n\nReturn only the message below, with every label and analytical sentence translated into the language detected in Step 2. The transcript block always contains `transcript_text` exactly as received, with no translation, correction, or edits. Do not return JSON. Do not wrap the message in code fences of your own. Two labeled examples are given for reference — the actual output must use whichever language matches `transcript_text`, including languages other than these two.\n\nExample, if the transcript is in Arabic, produce a message shaped exactly like this:\n\n🎙️ *تحليل الملاحظة الصوتية*\n━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *النوع:* <Action Item ✅ | Note 📝 | Announcement 📢 | Casual 💬>\n━━━━━━━━━━━━━━━━━━━━━━\n📄 *النص الحرفي:*\n<النص الكامل كما ورد بدون أي تعديل>\n━━━━━━━━━━━━━━━━━━━━━━\n📝 *الملخص:*\n<جملتان إلى ثلاث جمل تلخص المحتوى>\n━━━━━━━━━━━━━━━━━━━━━━\n✨ *أبرز النقاط:*\n- <نقطة 1>\n- <نقطة 2>\n━━━━━━━━━━━━━━━━━━━━━━\n✅ *الإجراء المطلوب:* <أدرج هذا السطر فقط إذا كان التصنيف Action Item>\n\nExample, if the transcript is in English, produce a message shaped exactly like this:\n\n🎙️ *Voice Note Analysis*\n━━━━━━━━━━━━━━━━━━━━━━\n🏷️ *Type:* <Action Item ✅ | Note 📝 | Announcement 📢 | Casual 💬>\n━━━━━━━━━━━━━━━━━━━━━━\n📄 *Full Transcript:*\n<the complete text exactly as received, unedited>\n━━━━━━━━━━━━━━━━━━━━━━\n📝 *Summary:*\n<two to three sentences summarizing the content>\n━━━━━━━━━━━━━━━━━━━━━━\n✨ *Highlights:*\n- <point 1>\n- <point 2>\n━━━━━━━━━━━━━━━━━━━━━━\n✅ *Action Required:* <include only if classification is Action Item>\n\nEmbedded rules:\n- Return only this formatted message. Nothing before it, nothing after it.\n- Every label and analytical sentence must be in the language detected from `transcript_text`; the transcript block itself is never translated or altered.\n- The 🏷️ Type line must always be present with exactly one of the four fixed categories.\n- The 📄 transcript block must always be present and exact, except in the missing-input fallback case in Section 7, where it is omitted.\n- The ✨ Highlights section and ✅ Action Required line are conditional — include each only when Section 7's logic calls for it; otherwise omit entirely."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        -48
+      ],
+      "id": "a25abe1b-96fa-4eca-a437-340cd5c8e6da",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "id"
+        },
+        "modelName": "gemini-3.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        560,
+        160
+      ],
+      "id": "28eecf64-6d84-4c5c-be83-d0245b2da87f",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "j071sxoTH7hcH8Z7",
+          "name": "Google Service Account account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice?.file_id || $json.message.audio?.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        -48
+      ],
+      "id": "970ab670-aa4b-4c97-8a8d-dd302d6759cf",
+      "name": "Get a file",
+      "webhookId": "5614384c-dd94-4efa-a09e-f12af3390351",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ey9qtkzmOv8AciJe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-pro-preview:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"inlineData\": {\n            \"mimeType\": \"{{$('Get a file').first().binary.data.mimeType}}\",\n            \"data\": \"{{ $json.data }}\"\n          }\n        },\n        {\n          \"text\": \"Transcribe the audio verbatim. Output strictly the raw spoken words only. Do not include any commentary, explanations, conversational filler, translations, quotes, or markdown formatting\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "name": "Gemini Transcript Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        -48
+      ],
+      "id": "a61f2fcd-b210-451d-af42-9e411daaf545",
+      "credentials": {
+        "googleApi": {
+          "id": "j071sxoTH7hcH8Z7",
+          "name": "Google Service Account account 6"
+        },
+        "httpQueryAuth": {
+          "id": "1tKGRLe8DmBrWc8r",
+          "name": "Query Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        -48
+      ],
+      "id": "6386f6a0-1596-4fd8-aae8-d260ac90a47e",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1136,
+        -48
+      ],
+      "id": "2ab5a779-fa82-48f9-a59b-be5c69f96a74",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.item.json.output; // Replace 'output' with your AI Agent's output field name\nconst chunks = text.match(/[\\s\\S]{1,4000}/g) || [];\nreturn chunks.map(chunk => ({ json: { text: chunk } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        -48
+      ],
+      "id": "94f9a211-c27a-4994-95ae-94a6faeab0ab",
+      "name": "Chunking"
+    },
+    {
+      "parameters": {
+        "chatId": "2076665816",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        -32
+      ],
+      "id": "b7353364-207f-4972-96c1-6272a52fac59",
+      "name": "send result",
+      "webhookId": "4aba0ee3-ccb2-4a1a-8516-894d27961349",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ey9qtkzmOv8AciJe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🎙️ Telegram Voice Note Analyst\n\nThis workflow automates the transcription and categorization of Telegram voice notes using Google's Gemini models.\n\n**Pipeline Breakdown:**\n1. **Trigger & Fetch:** Listens for incoming Telegram messages and extracts the audio file binary.\n2. **Transcription:** Sends the audio directly to Gemini via HTTP Request for strict, verbatim text extraction.\n3. **Agent Analysis:** An AI Agent evaluates the transcribed text to classify its intent (Action Item, Note, Announcement, or Casual) and extracts key highlights based on your system prompt.\n4. **Chunking:** A Code node processes the AI's output, splitting it into 4,000-character segments to ensure it does not exceed Telegram's message limits.\n5. **Delivery:** A Loop node iterates through the text chunks and delivers the final formatted analysis back to the user on Telegram.",
+        "height": 480,
+        "width": 656
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -352,
+        -592
+      ],
+      "typeVersion": 1,
+      "id": "627b0961-b863-4d98-a44c-85f38e58faee",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Transcript Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Gemini Transcript Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Chunking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "send result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunking": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send result": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "12dd4000-4c56-4bf9-98a2-4cd5d2cbefb6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3b17fc8fda52f1536873eae51fd330efe441dcec4ab88062e1c81b64db2cef85"
+  },
+  "nodeGroups": [],
+  "id": "Eq3YbGRwnXrlZZQ6",
+  "tags": []
+}
