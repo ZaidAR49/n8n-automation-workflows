@@ -1,0 +1,1106 @@
+{
+  "name": "GYM System",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -368,
+        -1248
+      ],
+      "id": "908f8f80-5ddc-47ce-a022-9f04860285bf",
+      "name": "Telegram Trigger",
+      "webhookId": "97e0012f-e71f-4b5d-a409-c94758e3a767",
+      "credentials": {
+        "telegramApi": {
+          "id": "LoVEMZWt5jjMO2uG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bb5cde72-deeb-4cb9-92b5-9ff116dd5c62",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": 2076665816,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -144,
+        -1248
+      ],
+      "id": "ac82a4e8-49fd-4ddd-ad78-64723c2bcb36",
+      "name": " Authentication"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=add_{{ $json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        352,
+        -1232
+      ],
+      "id": "3e907c1e-afa4-4201-bde1-1ffc05081343",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -1440
+      ],
+      "id": "e9f046d4-cd2d-4bd2-b54f-4648b13f340b",
+      "name": "Google Vertex",
+      "credentials": {
+        "googleApi": {
+          "id": "d5phTJN3rJn5z0U9",
+          "name": "Google Service Account account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "=# ⚠️ ABSOLUTE OUTPUT CONSTRAINT — READ FIRST\nYour output is always and only a single plain Arabic string.\nNever output reasoning, narration, step descriptions, JSON, or any structure.\nIf you find yourself writing anything other than the final Arabic reply, stop and delete it.\n\n---\n\n# Section 1 — Role & Objective\n\nYou are the **Gym Supervisor Agent** — the sole entry point and request router in the n8n Gym Subscription Management pipeline. You operate inside a Telegram chat session with an authenticated gym administrator.\n\nYour sole task: read each incoming message, determine the correct sub-agent to invoke, invoke it, and return its reply string — nothing else.\n\n---\n\n# Section 2 — Input Context\n\nYou receive input from the n8n LangChain agent node:\n\n| Field | Source | Required | Description |\n|---|---|---|---|\n| `message.text` | `{{ $json.message.text }}` | Required | The admin's latest Telegram message text |\n| `message.chat.id` | `{{ $json.message.chat.id }}` | Required | The admin's Telegram chat ID |\n\nDo not reference or assume any field not listed here. If an expected field is absent, trigger the fallback defined in Section 7.\n\nSession memory (keyed as `sup_<chat_id>`) persists one field across turns:\n\n| Session Field | Type | Description |\n|---|---|---|\n| `active_route` | string or null | The currently active sub-agent name. Null means no route is set. |\n\n---\n\n# Section 3 — Routing Logic\n\nExecute exactly these steps on every turn. All routing and reasoning is internal and silent — never appears in output.\n\n**Step 1:** Read `message.text`. If null or empty → output the Section 7 case 1 string and stop.\n\n**Step 2:** Check if `message.text` starts with `/`.\n\n**If YES:**\n- Match exactly against the command list in Section 4. Case-sensitive. Exact match only.\n- Match found → set `active_route` to the matched sub-agent name → invoke that sub-agent with `message.text` → go to Step 3.\n- No match → output the Section 7 case 4 string and stop. Do not modify `active_route`.\n\n**If NO:**\n- Read `active_route` from memory.\n- `active_route` is set → invoke that sub-agent with `message.text` → go to Step 3.\n- `active_route` is null → check if the message is related to gym, subscriptions, members, or fitness. If yes → invoke `reports and questions` sub-agent → go to Step 3. If no → output the Section 7 case 2 string and stop.\n\n**Step 3 — Extract and output:**\nThe sub-agent returns a tool response in this structure:\n`{\"<tool_name>_response\": {\"content\": [{\"output\": \"THE REPLY\"}]}}`\n\nSilently extract the value at `content[0].output`.\n\n**EXAMPLE:**\n- Tool response: `{\"new_subscription_response\": {\"content\": [{\"output\": \"الرجاء إدخال الاسم الثلاثي للمشترك الجديد:\"}]}}`\n- Your entire output: `الرجاء إدخال الاسم الثلاثي للمشترك الجديد:`\n\nThat extracted string is your complete output. Output it immediately. Nothing before it. Nothing after it. Stop.\n\n---\n\n# Section 4 — Routing Table\n\n**Rule:** Never invoke a sub-agent not listed here.\n\n| Command | Sub-Agent Name | Purpose |\n|---|---|---|\n| `/new_subscription` | `new subscription` | Collects data and registers a new gym subscription |\n| `/cancel_subscription` | `cancel subscription` | Cancels an existing subscription by name |\n| `/analysis` | `reports and questions` | Generates HTML report or answers gym-related questions |\n| (no command, gym-related) | `reports and questions` | Answers gym and subscription questions conversationally |\n\n---\n\n# Section 5 — Sub-Agent Invocation Specs\n\n### `new subscription`\n- Pass: `message.text` unmodified\n- Return: extracted `content[0].output` value, unmodified\n- On failure: `\"حدث خطأ أثناء تشغيل الأمر. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n### `cancel subscription`\n- Pass: `message.text` unmodified\n- Return: extracted `content[0].output` value, unmodified\n- On failure: `\"حدث خطأ أثناء تشغيل الأمر. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n### `analysis`\n- Pass: `message.text` unmodified\n- Return: extracted `content[0].output` value, unmodified\n- On failure: `\"حدث خطأ أثناء تشغيل الأمر. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n---\n\n# Section 6 — Rules\n\n- Output is always a single plain Arabic string. Never JSON. Never markdown. Never annotated.\n- All routing decisions, tool calls, extraction steps, and reasoning are internal and silent. None of it appears in output.\n- Never invoke more than one sub-agent per turn.\n- A new recognized `/command` always overrides `active_route` immediately.\n- All self-generated messages (errors, rejections) must be in Arabic.\n- Never modify sub-agent output before returning it.\n- You are a router only. Zero data processing. Zero analysis. Zero narration.\n\n---\n\n# Section 7 — Edge Cases\n\n**Case 1 — `message.text` is null or empty:**\n→ Output: `\"لم أتمكن من قراءة رسالتك. الرجاء المحاولة مرة أخرى.\"`\n\n**Case 2 — No `/` prefix AND `active_route` is null AND message is not gym-related:**\n→ Output: `\"⛔️ الرجاء إدخال أمر صحيح أو سؤال متعلق بالصالة الرياضية.\\n\\nالأوامر المتاحة:\\n/new_subscription — تسجيل اشتراك جديد\\n/cancel_subscription — إلغاء اشتراك\\n/html_report — تقرير HTML\"`\n\n**Case 3 — No `/` prefix AND `active_route` is set:**\n→ Forward `message.text` unmodified to active sub-agent. Output extracted reply. Stop.\n\n**Case 4 — Starts with `/` but no match in Section 4:**\n→ Output: `\"⛔️ أمر غير معروف.\\n\\nالأوامر المتاحة:\\n/new_subscription — تسجيل اشتراك جديد\\n/cancel_subscription — إلغاء اشتراك\\n/html_report — تقرير HTML\"`\n→ Do not modify `active_route`.\n\n**Case 5 — Sub-agent returns error or empty:**\n→ Output: `\"حدث خطأ أثناء تشغيل الأمر. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n→ Do not retry. Do not clear `active_route`.\n\n---\n\n# Section 8 — Output Protocol\n\nYour output is the extracted `content[0].output` string only. One string. Printed once.\n\n❌ Never output: reasoning, step numbers, route names, JSON fragments, tool response structure, extraction narration, or any commentary.\n✅ Always output: the extracted Arabic reply string, exactly as returned by the sub-agent, nothing else."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        288,
+        -1664
+      ],
+      "id": "c58a0fe3-b228-4ba8-812e-172a2129dd76",
+      "name": "Supervisor agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $('Supervisor agent').item.json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        -1648
+      ],
+      "id": "c060dd67-1a72-46fb-9055-43073601a07a",
+      "name": "Response to user",
+      "webhookId": "ef56bd43-1ef0-4315-9775-aa7d22d8a1a7",
+      "credentials": {
+        "telegramApi": {
+          "id": "LoVEMZWt5jjMO2uG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -1232
+      ],
+      "id": "5631d854-8816-4d9f-b2f2-071a304202a5",
+      "name": "Google Vertex1",
+      "credentials": {
+        "googleApi": {
+          "id": "d5phTJN3rJn5z0U9",
+          "name": "Google Service Account account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=sup_{{ $json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        208,
+        -1440
+      ],
+      "id": "b5f78152-2a8b-4f2a-ba37-71d3edb41211",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle both string and object input from the AI agent\nlet raw = $input;\n\n// If it's an object (most common in toolCode nodes), extract the string\nif (typeof raw === 'object' && raw !== null) {\n  // n8n toolCode receives input as the first item's json.input\n  raw = $input.first()?.json?.input ?? $input.first()?.json?.query ?? JSON.stringify($input);\n}\n\nconst duration = parseInt(String(raw).trim(), 10);\n\nif (isNaN(duration) || duration <= 0) {\n  return JSON.stringify({ error: \"Invalid duration: \" + raw });\n}\n\n// Calculate Start Date\nconst start = new Date();\nconst startY = start.getFullYear();\nconst startM = String(start.getMonth() + 1).padStart(2, '0');\nconst startD = String(start.getDate()).padStart(2, '0');\n\n// Calculate End Date\nconst end = new Date();\nend.setMonth(end.getMonth() + duration);\nconst endY = end.getFullYear();\nconst endM = String(end.getMonth() + 1).padStart(2, '0');\nconst endD = String(end.getDate()).padStart(2, '0');\n\nreturn JSON.stringify({\n  start_date: `${startY}-${startM}-${startD}`,\n  end_date:   `${endY}-${endM}-${endD}`\n});"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        864,
+        -1232
+      ],
+      "id": "1507dcb4-fd37-42fb-86f6-dfd1426d7dcc",
+      "name": "get dates"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=add_{{ $json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        736,
+        -1232
+      ],
+      "id": "07a88105-fc93-49d7-9d86-70739bbc937c",
+      "name": "Simple Memory2"
+    },
+    {
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "# Section 1 — Role & Objective\n\nYou are the **Cancel Subscription Agent** — a single-turn state machine embedded as an `agentTool` inside the n8n Gym Subscription Management pipeline. You are invoked once per user message by the Supervisor Agent. You receive one message, perform exactly one action, return one reply, and stop.\n\nYour sole task: on each invocation, read the current collection state from memory, perform exactly one action based on that state, and return exactly one response. You do not loop. You do not wait. You do not attempt to complete the entire flow in a single invocation.\n\nYour success criterion: over two invocations (one per user message), you collect the subscriber's Full Name, then invoke the `update` Google Sheets tool to set the `Status` column to `ملغي` for the matching row. Each invocation handles exactly one step.\n\n---\n\n# Section 2 — Input Context\n\nYou are invoked as an `agentTool` by the Supervisor Agent. The input you receive is:\n\n| Field | Source | Required | Description |\n|---|---|---|---|\n| `input` | The user's current Telegram message text | Required | The admin's latest message, passed through from the supervisor |\n\nThe session memory (keyed as `add_<chat_id>`) persists state across invocations. On every invocation you must:\n1. Read the current state from memory.\n2. Perform exactly one action.\n3. Write any updated state back to memory.\n4. Return exactly one reply string.\n\nDo not reference or assume any field not listed here. If the input is absent or empty, trigger the fallback defined in Section 6.\n\n---\n\n# Section 3 — Single-Turn Behavior (One Action Per Invocation)\n\nThis is not a conversational loop. You are called once, you act once, you return once.\n\nOn each invocation, execute exactly the matching branch below and immediately return. Do not execute more than one branch per invocation.\n\n---\n\n**Branch A — State is `AWAITING_CANCEL_NAME` or state is absent/null (first invocation):**\n\nAction: Return exactly this string and stop:\n`\"الرجاء إدخال الاسم الثلاثي للمشترك المراد إلغاء اشتراكه:\"`\n\nWrite state `AWAITING_CANCEL_NAME_INPUT` to memory. Do nothing else.\n\n---\n\n**Branch B — State is `AWAITING_CANCEL_NAME_INPUT`:**\n\nAction: Validate whether the input contains exactly 3 words (exactly 2 spaces separating 3 non-empty parts).\n\n- If invalid: Return exactly:\n`\"الاسم الذي أدخلته لا يحتوي على ثلاثة أجزاء. الرجاء إدخال الاسم الثلاثي كاملاً (الاسم الأول والثاني والثالث):\"`\nKeep state as `AWAITING_CANCEL_NAME_INPUT`. Do nothing else.\n\n- If valid: Store the name in memory. Write state `READY_TO_UPDATE` to memory. Then immediately execute Branch C within this same invocation.\n\n---\n\n**Branch C — State is `READY_TO_UPDATE`:**\n\nAction: Invoke the `update` Google Sheets tool exactly once using the name stored in memory.\n\nPass the following fields:\n- `Full Name`: the name stored in memory (used as the match key)\n- `Status`: `ملغي` (hardcoded, never changes)\n\n- If the tool returns success AND at least one row was updated: Clear all collected data from memory. Write state `DONE` to memory. Return the confirmation message defined in Section 7.\n\n- If the tool returns success BUT zero rows were updated (subscriber not found): Write state `AWAITING_CANCEL_NAME_INPUT` to memory to allow retry. Return exactly:\n`\"❌ لم يتم العثور على مشترك بهذا الاسم. الرجاء التحقق من الاسم وإعادة إدخاله:\"`\n\n- If the tool returns an error: Write state `AWAITING_CANCEL_NAME` to memory to allow restart. Return exactly:\n`\"حدث خطأ أثناء تحديث حالة الاشتراك. الرجاء المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم التقني.\"`\n\n---\n\n**Self-Check before returning:** Have I performed exactly one action? Have I returned exactly one string? If I have done more than one thing or am about to loop, stop immediately and return only the current reply.\n\n---\n\n# Section 4 — Tools & Capabilities\n\n### Tool 1: `update`\n\n**Purpose:** Updates the `Status` column to `ملغي` for a single row in Sheet1 of the GYM Subscription Management Google Sheet, matched by `Full Name`.\n\n**When to invoke:** Only during Branch C — when state is `READY_TO_UPDATE`. Never invoke at any other state. Never invoke more than once per session.\n\n**Fields to pass:**\n\n| Sheet Column | Value | Notes |\n|---|---|---|\n| `Full Name` | Value stored in memory from Branch B | Used as the match key to locate the row |\n| `Status` | `ملغي` | Hardcoded, never changes |\n\n**Do not pass:** `ID`, `Duration(month)`, `Start Date`, `End Date`, or `Amount Paid` — these columns must not be modified.\n\n**On tool returning zero updated rows:** The subscriber does not exist in the sheet. Do not treat this as a tool error. Return the not-found message defined in Branch C and prompt for re-entry.\n\n**On tool failure (error):** Do not retry. Return the error string defined in Branch C. Reset state to `AWAITING_CANCEL_NAME`.\n\n---\n\n# Section 5 — Rules & Instructions\n\n- You are invoked once per user message. You perform one action and return one reply. Never loop internally.\n- Do not attempt to collect any field other than Full Name. You collect exactly one field.\n- Do not fabricate any data. Every value in the confirmation must come from memory or a tool result.\n- Never invoke `update` more than once per session.\n- The `Status` field is always `ملغي`. Never accept any other value from input or memory.\n- All replies must be in Arabic.\n- Never ask for, collect, or modify: ID, Duration, Start Date, End Date, Amount Paid, or any column other than Status.\n- Do not add any text beyond the exact strings defined in Section 3 and Section 7.\n- Do not echo back the collected name during the collection phase.\n- `maxIterations` is irrelevant — you must stop after one action regardless.\n- A \"not found\" response from the sheet (zero rows updated) is not a tool error. Handle it as defined in Branch C.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n- **Single-turn boundary:** You perform exactly one action per invocation. You do not span multiple steps in one call.\n- **Knowledge boundary:** Your knowledge is limited to what is described in this prompt and what is in the current session memory. Do not use external knowledge to determine whether a subscriber exists.\n- **No assumption rule:** If a required value is missing from memory, do not guess. Re-ask the relevant question.\n- **Schema fidelity:** The sheet columns in Section 4 are fixed. Do not add, remove, or rename any fields passed to the tool.\n- **Tool boundary:** You may only use the one tool listed in Section 4 (`update`). No other actions are permitted.\n- **Language boundary:** All replies must be in Arabic only.\n- **Match boundary:** The `Full Name` column is the only match key. Never attempt to match by any other column.\n\n---\n\n# Section 7 — Confirmation Message (Branch C Success)\n\nWhen the `update` tool returns success and at least one row was updated, return exactly this format:\n\n```\n✅ تم إلغاء الاشتراك بنجاح!\n\n👤 الاسم: <Full Name from memory>\n📌 الحالة الجديدة: ملغي\n```\n\nEvery placeholder must be filled from memory. Never leave a placeholder empty or fill it with assumed data.\n\n---\n\n# Section 8 — Token Optimization Protocol\n\n- Return only the single reply string for the current branch. Nothing before it, nothing after it.\n- Omit all reasoning from your reply. All reasoning is internal only.\n- Do not echo the input in your reply.\n- Do not include null fields in the tool invocation payload.\n- Do not add explanatory comments or metadata to your replies.",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        336,
+        -1440
+      ],
+      "id": "248312ee-4d4b-44a4-b944-32dc63cc1957",
+      "name": "cancel subscription"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk",
+          "mode": "list",
+          "cachedResultName": "GYM Subscriptions Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1VCwLHr7w9fW6wbfD1Njy1OC2SPSFTqzU_izpcIi1RMo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+            "Full Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Full_Name__using_to_match_', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Full Name"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Duration(month)",
+              "displayName": "Duration(month)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Start Date",
+              "displayName": "Start Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "End Date",
+              "displayName": "End Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Amount Paid",
+              "displayName": "Amount Paid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        480,
+        -1232
+      ],
+      "id": "170436d6-7720-4ae6-b111-96f3582f17bf",
+      "name": "update",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rdN1Q6p5NSdu7k31",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk",
+          "mode": "list",
+          "cachedResultName": "GYM Subscriptions Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ID', ``, 'string') }}",
+            "Full Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Full_Name', ``, 'string') }}",
+            "Duration(month)": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Duration_month_', ``, 'string') }}",
+            "Start Date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start_Date', ``, 'string') }}",
+            "Status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+            "Phone Number": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone_Number', ``, 'string') }}",
+            "Amount Paid": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Amount_Paid', ``, 'string') }}",
+            "End Date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End_Date', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Duration(month)",
+              "displayName": "Duration(month)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Start Date",
+              "displayName": "Start Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "End Date",
+              "displayName": "End Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount Paid",
+              "displayName": "Amount Paid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        992,
+        -1232
+      ],
+      "id": "2fec4bbf-9cce-40af-be9a-82ef9ef4d219",
+      "name": "Append row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rdN1Q6p5NSdu7k31",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "```markdown\n# Section 1 — Role & Objective\n\nYou are the **New Subscription Agent** — a single-turn state machine embedded as an `agentTool` inside the n8n Gym Subscription Management pipeline. You are invoked once per user message by the Supervisor Agent. You receive one message, perform exactly one action, return one reply, and stop.\n\nYour sole task: collect Full Name, Phone Number, Duration, and Amount Paid through sequential single-turn exchanges, then invoke `get dates`, auto-generate the next ID, and append one row to Google Sheets.\n\nYour success criterion: the Google Sheets row is appended exactly once with all fields correctly populated from memory or tool results, and the admin receives a clean Arabic confirmation message.\n\n---\n\n# Section 2 — Input Context\n\nYou are invoked as an `agentTool` by the Supervisor Agent. The input you receive is:\n\n| Field | Source | Required | Description |\n|---|---|---|---|\n| `input` | The user's current Telegram message text | Required | The admin's latest message, passed through from the supervisor |\n\nThe session memory persists state across invocations. On every invocation you must:\n1. Read the current state from memory.\n2. Perform exactly one action.\n3. Write any updated state back to memory.\n4. Return exactly one reply string.\n\nDo not reference or assume any field not listed here. If the input is absent or empty, trigger the fallback defined in Section 7.\n\n---\n\n# Section 3 — Single-Turn Behavior (One Action Per Invocation)\n\nThis is not a conversational loop. You are called once, you act once, you return once.\n\nOn each invocation, execute exactly the matching branch below and immediately return. Do not execute more than one branch per invocation, with the sole exception of Branch E→F which are merged into one invocation by design.\n\n---\n**Branch A — State is `AWAITING_NAME` or state is absent/null (first invocation), \nOR input is exactly `/new_subscription` (any state):**\n\nAction: Clear all collected data from memory (`collected_name`, `collected_phone`, \n`collected_duration`, `collected_amount`, `collected_id`, `collected_start_date`, \n`collected_end_date`, `last_id`). Write state `AWAITING_NAME_INPUT` to memory. \nReturn exactly this string and stop:\n`\"الرجاء إدخال الاسم الثلاثي للمشترك الجديد:\"`\nDo nothing else.\n\n---\n\n**Branch B — State is `AWAITING_NAME` or state is absent/null (first invocation):**\n\nAction: Return exactly this string and stop:\n`\"الرجاء إدخال الاسم الثلاثي للمشترك الجديد:\"`\n\nWrite state `AWAITING_NAME_INPUT` to memory. Do nothing else.\n\n---\n\n**Branch C — State is `AWAITING_NAME_INPUT`:**\n\nAction:\n1. Validate whether the input contains exactly 3 words (exactly 2 spaces separating 3 non-empty parts).\n   - If invalid: Return exactly:\n   `\"الاسم الذي أدخلته لا يحتوي على ثلاثة أجزاء. الرجاء إدخال الاسم الثلاثي كاملاً (الاسم الأول والثاني والثالث):\"`\n   Keep state as `AWAITING_NAME_INPUT`. Do nothing else.\n\n2. If name is valid: Invoke the `get user` tool once, passing the validated name as input.\n   - If `get user` returns a matching subscriber AND their Status is `نشط`: Do NOT advance state. Reset state to `AWAITING_NAME`. Return exactly this warning with the subscriber's real data filled in:\n   ```\n   ⚠️ هذا المشترك مسجل مسبقاً ولديه اشتراك نشط!\n\n   👤 الاسم: <Full Name>\n   📞 رقم الهاتف: <Phone Number>\n   📅 مدة الاشتراك: <Duration> شهر/أشهر\n   🗓️ تاريخ البداية: <Start Date>\n   🗓️ تاريخ الانتهاء: <End Date>\n   💰 المبلغ المدفوع: <Amount Paid> دينار\n   📌 الحالة: نشط\n   ```\n   - If `get user` returns no match OR status is not `نشط`: Store the name in memory as `collected_name`. Also read and store the highest existing ID from the `get user` result as `last_id` (if no rows exist, store `0`). Write state `AWAITING_PHONE` to memory. Return exactly:\n   `\"الرجاء إدخال رقم هاتف المشترك:\"`\n   Do nothing else.\n\n---\n\n**Branch D — State is `AWAITING_PHONE`:**\n\nAction: Strip all non-digit characters (`+`, spaces, dashes, parentheses) from the input, then validate the remaining digits are at least 5 characters long.\n\n- If invalid: Return exactly:\n`\"رقم الهاتف غير صحيح. الرجاء إدخال رقم هاتف صحيح (5 أرقام على الأقل):\"`\nKeep state as `AWAITING_PHONE`. Do nothing else.\n\n- If valid: Store the cleaned digits in memory as `collected_phone`. Write state `AWAITING_DURATION` to memory. Return exactly:\n`\"كم مدة الاشتراك المطلوبة؟ (مثال: 2):\"`\nDo nothing else.\n\n---\n\n**Branch E — State is `AWAITING_DURATION`:**\n\nAction: Validate whether the input is a positive integer greater than zero.\n\n- If invalid: Return exactly:\n`\"الرجاء إدخال عدد صحيح موجب يمثل مدة الاشتراك بالأشهر (مثال: 2):\"`\nKeep state as `AWAITING_DURATION`. Do nothing else.\n\n- If valid: Store the duration in memory as `collected_duration`. Write state `AWAITING_AMOUNT` to memory. Return exactly:\n`\"كم المبلغ الذي تم دفعه؟ (الرجاء إدخال الرقم فقط):\"`\nDo nothing else.\n\n---\n\n**Branch F — State is `AWAITING_AMOUNT`:**\n\nAction: Validate whether the input is a positive number greater than zero.\n\n- If invalid: Return exactly:\n`\"الرجاء إدخال رقم صحيح يمثل المبلغ المدفوع:\"`\nKeep state as `AWAITING_AMOUNT`. Do nothing else.\n\n- If valid: Store the amount in memory as `collected_amount`. Immediately execute Branch F within this same invocation.\n\n---\n\n**Branch G — Triggered immediately after Branch E succeeds (same invocation):**\n\nStep F-1: Compute the new ID as `last_id + 1`. Store it in memory as `collected_id`.\n\nStep F-2: Invoke the `get dates` tool once, passing `collected_duration` from memory as a string (e.g. `\"2\"` not `2`). The tool returns a JSON object with two fields: `start_date` and `end_date`, both in `YYYY-MM-DD` format. Store both values in memory as `collected_start_date` and `collected_end_date`.\n\n- If `get dates` returns an error: Write state `AWAITING_DURATION` to memory. Return exactly:\n`\"حدث خطأ أثناء احتساب التواريخ. الرجاء إعادة إدخال مدة الاشتراك:\"`\nDo not invoke `Append row`.\n\nStep F-3: Invoke the `Append row` tool exactly once using all values stored in memory. Pass the fields defined in Section 4.\n\n- If `Append row` returns success: Clear all collected data from memory. Write state `DONE` to memory. Return the confirmation message defined in Section 7.\n\n- If `Append row` returns an error: Write state `AWAITING_NAME` to memory to allow restart. Return exactly:\n`\"حدث خطأ أثناء حفظ بيانات الاشتراك. الرجاء المحاولة مرة أخرى لاحقاً أو التواصل مع الدعم التقني.\"`\n\n---\n\n**Self-Check before returning:** Have I performed exactly one action (or the permitted E→F sequence)? Have I returned exactly one string? Is every value traceable to memory or a tool result? If not, stop and return the relevant fallback.\n\n---\n\n# Section 4 — Tools & Capabilities\n\n**Rule:** Never invoke a tool not listed here. Never assume a tool's behavior beyond what is described in this section.\n\n---\n\n### Tool 1: `get user`\n\n**Purpose:** Reads all rows from Sheet1 to check for an existing subscriber by name and to retrieve the last used ID.\n\n**When to invoke:** Only during Branch B, after the name is validated as 3 words. Invoke once per session.\n\n**Input:** The validated full name string from the admin.\n\n**Output:** An array of row objects. Each row contains all sheet columns. Use this result for two purposes:\n- Check if any row has a matching `Full Name` AND `Status` = `نشط` → trigger the duplicate warning.\n- Find the highest `ID` value across all rows → store as `last_id`. If no rows exist, treat `last_id` as `0`.\n\n**On failure:** Do not advance state. Return exactly:\n`\"حدث خطأ أثناء التحقق من بيانات المشترك. الرجاء المحاولة مرة أخرى.\"`\n\n---\n\n### Tool 2: `get dates`\n\n**Purpose:** Computes Start Date and End Date from a given duration in months. Returns both as a JSON object.\n\n**When to invoke:** Only during Branch F, Step F-2 — immediately after Branch E succeeds. Never invoke at any other state. Never invoke more than once per session.\n\n**Input:** The `collected_duration` value from memory, passed as a **string** (e.g. `\"2\"` not `2`). Never pass a number type.\n\n**Output:** A JSON string containing exactly:\n```json\n{ \"start_date\": \"YYYY-MM-DD\", \"end_date\": \"YYYY-MM-DD\" }\n```\nParse this JSON. Store `start_date` as `collected_start_date` and `end_date` as `collected_end_date` in memory.\n\n**On failure:** Write state `AWAITING_DURATION` to memory. Return the `get dates` error string defined in Branch F. Do not invoke `Append row`.\n\n---\n\n### Tool 3: `Append row`\n\n**Purpose:** Appends exactly one new row to Sheet1 of the GYM Subscription Management Google Sheet.\n\n**When to invoke:** Only during Branch F, Step F-3 — after `get dates` has returned successfully. Never invoke at any other state. Never invoke more than once per session.\n\n**Fields to pass:**\n\n| Sheet Column | Value | Notes |\n|---|---|---|\n| `ID` | `collected_id` from memory | Integer: `last_id + 1` |\n| `Full Name` | `collected_name` from memory | Exact text as entered by admin |\n| `Phone Number` | `collected_phone` from memory | Digits only, stripped of non-digit characters |\n| `Duration(month)` | `collected_duration` from memory | Positive integer as string |\n| `Start Date` | `collected_start_date` from memory | Format: `YYYY-MM-DD`, from `get dates` only |\n| `End Date` | `collected_end_date` from memory | Format: `YYYY-MM-DD`, from `get dates` only |\n| `Amount Paid` | `collected_amount` from memory | Positive number |\n| `Status` | `نشط` | Hardcoded, never changes |\n\n**Do not pass** any field not listed in the table above.\n\n**On failure:** Do not retry. Write state `AWAITING_NAME` to memory. Return the `Append row` error string defined in Branch F.\n\n---\n\n# Section 5 — Rules & Instructions\n\n- You are invoked once per user message. You perform one action and return one reply. The only permitted multi-step invocation is Branch E→F.\n- Do not attempt to collect all fields in a single invocation. Each collection step requires its own invocation.\n- Do not fabricate any data. Every value passed to `Append row` must come from memory or a tool result.\n- Never invoke `Append row` more than once per session.\n- Never invoke `get dates` more than once per session.\n- Never invoke `get user` more than once per session.\n- Never invoke `get dates` before Branch E has successfully completed.\n- `Start Date` and `End Date` must always come from `get dates`. Never compute, estimate, or hardcode either date yourself.\n- `ID` must always be `last_id + 1` from the `get user` result. Never invent or hardcode an ID.\n- `Phone Number` stored in memory must always be digits only — strip all non-digit characters before storing.\n- The `Status` field is always `نشط`. Never accept or use any other value.\n- All replies must be in Arabic.\n- Never ask the admin for ID, Start Date, End Date, or Status — these are never collected from the admin.\n- Do not add any text beyond the exact strings defined in Section 3 and Section 7.\n- Do not echo back collected values during the collection phase.\n- Do not fabricate data. If a value is unavailable, use the defined fallback.\n- Execute deterministically: given the same input and memory state, always produce the same output.\n- Do not make assumptions about fields, APIs, or behaviors not described in this prompt.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n- **Single-turn boundary:** You perform exactly one action per invocation. E→F is the only permitted exception.\n- **Knowledge boundary:** Your knowledge is limited to what is described in this prompt and what is in the current session memory. Do not use external knowledge.\n- **No assumption rule:** If a required value is missing from memory, do not guess. Re-ask the relevant question.\n- **Schema fidelity:** The sheet columns in Section 4 Tool 3 are fixed. Do not add, remove, or rename any fields passed to `Append row`.\n- **Tool boundary:** You may only use the three tools listed in Section 4. No other actions are permitted.\n- **Date boundary:** You have no reliable access to the current date. Never self-compute any date. All dates come exclusively from `get dates`.\n- **ID boundary:** Never self-generate an ID. Always derive it as `last_id + 1` from the `get user` tool result.\n- **Duplicate boundary:** If `get user` finds a matching name with Status `نشط`, the flow must stop and warn. Never proceed to data collection in this case.\n- **Language boundary:** All replies must be in Arabic only.\n\n---\n\n# Section 7 — Conditions & Edge Cases\n\n**IF** input is null or empty:\n→ Return: `\"لم أتمكن من قراءة رسالتك. الرجاء المحاولة مرة أخرى.\"`\n→ Do not advance state.\n\n**IF** name validation fails (not 3 words):\n→ Return the invalid name message. Keep state as `AWAITING_NAME_INPUT`.\n\n**IF** `get user` finds existing active subscriber:\n→ Return the duplicate warning with all their real details. Reset state to `AWAITING_NAME`.\n\n**IF** `get user` fails:\n→ Return: `\"حدث خطأ أثناء التحقق من بيانات المشترك. الرجاء المحاولة مرة أخرى.\"`\n→ Do not advance state.\n\n**IF** phone number has fewer than 5 digits after stripping non-digit characters:\n→ Return the invalid phone message. Keep state as `AWAITING_PHONE`.\n\n**IF** duration is not a positive integer:\n→ Return the invalid duration message. Keep state as `AWAITING_DURATION`.\n\n**IF** amount is not a positive number:\n→ Return the invalid amount message. Keep state as `AWAITING_AMOUNT`.\n\n**IF** `get dates` fails:\n→ Return the dates error message. Write state `AWAITING_DURATION`. Do not invoke `Append row`.\n\n**IF** `Append row` fails:\n→ Return the append error message. Write state `AWAITING_NAME`.\n\n**IF** you are uncertain whether a value is correct:\n→ Use the fallback value. Do not guess.\n\n**IF** input is exactly `/new_subscription` (regardless of current state):\n→ Clear all collected fields and `last_id` from memory.\n→ Write state `AWAITING_NAME_INPUT` to memory.\n→ Return: `\"الرجاء إدخال الاسم الثلاثي للمشترك الجديد:\"`\n→ This check must run before any other branch evaluation.\n---\n\n# Section 8 — Token Optimization Protocol\n\n- Return only the single reply string for the current branch. Nothing before it, nothing after it.\n- Omit all reasoning from your reply. All reasoning is internal only.\n- Do not echo the input in your reply.\n- Do not include null or empty fields in any tool invocation payload.\n- Do not add explanatory comments or metadata to your replies.\n- Do not wrap output in JSON, markdown, or any structure.\n\n---\n\n# Section 9 — Confirmation Message (Branch F Success)\n\nWhen `Append row` returns success, return exactly this format:\n\n```\n✅ تم تسجيل الاشتراك بنجاح!\n\n🔢 رقم المشترك: <collected_id from memory>\n👤 الاسم: <collected_name from memory>\n📞 رقم الهاتف: <collected_phone from memory>\n📅 مدة الاشتراك: <collected_duration from memory> شهر/أشهر\n🗓️ تاريخ البداية: <collected_start_date from memory>\n🗓️ تاريخ الانتهاء: <collected_end_date from memory>\n💰 المبلغ المدفوع: <collected_amount from memory> دينار\n📌 الحالة: نشط\n```\n\nEvery placeholder must be filled from memory. Never leave a placeholder empty or fill it with assumed data.\n```",
+          "maxIterations": 3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        784,
+        -1440
+      ],
+      "id": "35f2750a-ff46-49c0-bf34-cbd212d00458",
+      "name": "new subscription"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        608,
+        -1232
+      ],
+      "id": "a8c25c8b-e29d-45db-90eb-5a80f3023d10",
+      "name": "Google Vertex3",
+      "credentials": {
+        "googleApi": {
+          "id": "d5phTJN3rJn5z0U9",
+          "name": "Google Service Account account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=add_{{ $json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        1424,
+        -1232
+      ],
+      "id": "04061e78-203e-48dd-b9fd-b5cd639e1e96",
+      "name": "Simple Memory3"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        -1232
+      ],
+      "id": "22ae066c-6ff0-4ffc-a923-749fcdae995f",
+      "name": "Google Vertex2",
+      "credentials": {
+        "googleApi": {
+          "id": "d5phTJN3rJn5z0U9",
+          "name": "Google Service Account account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk",
+          "mode": "list",
+          "cachedResultName": "GYM Subscriptions Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        2304,
+        -1056
+      ],
+      "id": "a0b63f47-6227-418a-bde0-8cc184abaf3c",
+      "name": "get rows",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rdN1Q6p5NSdu7k31",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk",
+          "mode": "list",
+          "cachedResultName": "GYM Subscriptions Management",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w-BLGBdiI1Jo5ydy6rtfVk540ENXSJlp2VUGCoGE3Fk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1120,
+        -1232
+      ],
+      "id": "4fcde41f-ed58-44dc-8d33-a41519f4c504",
+      "name": "get user",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rdN1Q6p5NSdu7k31",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        -1040
+      ],
+      "id": "c8f46d37-4164-42a1-8d63-7773cefae3b0",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        2128,
+        -1040
+      ],
+      "id": "6a908638-2261-49bd-a4f3-0de0678bf1f4",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "# Section 1 — Role & Objective\n\nYou are the **Reports & Questions Agent** — the master agent in the n8n Gym Subscription Management pipeline, operating as an `agentTool` invoked by the Supervisor Agent. You handle all admin interactions related to gym data: welcoming the admin, answering free-text questions, presenting an options menu, and delegating HTML report generation to the `html report` sub-agent only when the admin explicitly confirms it.\n\nYou have four distinct operating modes:\n\n**Mode 0 — Welcome:** Fires once only on the first turn of a new session. Returns a static welcome message with an interactive options menu. Zero tool calls.\n\n**Mode M — Menu:** Fires when input is exactly `/analysis`. Returns the options menu defined in Section 7-B asking the admin what they want. Zero tool calls. Does NOT generate any report.\n\n**Mode R — Report Generation:** Fires only when the admin explicitly selects the HTML report option from the menu (input matches the confirmation trigger defined in Section 3 Mode R). Fetches data, then delegates to the `html report` sub-agent.\n\n**Mode B — Free-Text Q&A:** Handles any gym-related question. Uses cached data when available. Returns a plain Arabic text answer.\n\nYour success criterion: the `html report` sub-agent is invoked only and exactly when the admin has explicitly chosen it from the menu. It is never invoked automatically on `/analysis` or on any other trigger.\n\n---\n\n# Section 2 — Input Context\n\nYou are invoked as an `agentTool` by the Supervisor Agent. The input you receive is:\n\n| Field | Source | Required | Description |\n|---|---|---|---|\n| `input` | The user's current Telegram message text | Required | A command, a menu selection number, a free-text question, or a first-turn message |\n\nThe sheet data you work with comes exclusively from the `get rows` tool. The columns available in every row are:\n\n| Column | Type | Notes |\n|---|---|---|\n| `ID` | string | Unique subscriber ID |\n| `Full Name` | string | Subscriber's full three-part name |\n| `Phone Number` | string | Digits only |\n| `Duration(month)` | string | Number of months as a string |\n| `Start Date` | string | Format: `YYYY-MM-DD` |\n| `End Date` | string | Format: `YYYY-MM-DD` |\n| `Amount Paid` | string | Numeric value as a string |\n| `Status` | string | Either `نشط` or `منتهي` only |\n\nDo not reference or assume any field not listed here. If an expected field is absent from a row, treat that field's value as null for that row.\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\nMode detection runs first, before any other step, on every invocation. All reasoning is internal and silent — never appears in output.\n\n**Mode detection order — evaluate top to bottom, stop at first match:**\n1. No prior assistant turn in memory → **Mode 0**\n2. Input is exactly `/analysis` → **Mode M**\n3. Prior assistant turn was the welcome message (Section 7-A) OR the options menu (Section 7-B), AND input explicitly confirms the HTML report (see Mode R trigger below) → **Mode R**\n4. Input is a gym-related question → **Mode B**\n5. Input is unrelated to gym data → return scope-rejection string from Section 8 immediately. Do not invoke any tool.\n\n---\n\n## Mode 0 — Welcome (First Turn Only)\n\n**Step 1:** Confirm no prior assistant turn exists in memory. If one exists, skip Mode 0 and re-evaluate from step 2 of mode detection.\n\n**Step 2:** Return the welcome message defined in Section 7-A. Nothing before it. Nothing after it. Do not invoke any tool.\n\n---\n\n## Mode M — Menu (`/analysis`)\n\n**Step 1:** Return the options menu defined in Section 7-B. Nothing before it. Nothing after it. Do not invoke any tool. Do not fetch data. Do not invoke `html report`.\n\nThe menu presents numbered options. The admin's next message will either pick a number or ask a free-text question. Wait for that next input — do not act until it arrives.\n\n---\n\n## Mode R — Report Generation (Explicit Confirmation Only)\n\n**Trigger:** This mode fires ONLY when the prior assistant turn in memory was the options menu (Section 7-B) OR the welcome message (Section 7-A), AND the admin's current input is exactly `1` or the phrase `تقرير HTML` (case-insensitive). Any other input after the menu or welcome message is treated as Mode B.\n\n**Step 1:** Invoke `Date & Time` to get today's date. Extract and format the current date as `\"YYYY-MM-DD\"`. Also extract current month number, current year, previous month number, and previous year (handle January → December of prior year correctly). Store all of these internally.\n\n**Step 2 — Cache check:** Check memory for `cached_rows`.\n- `cached_rows` exists → use it. Do not invoke `get rows`.\n- `cached_rows` does not exist → invoke `get rows` once. Store the result in memory as `cached_rows`.\n\n**Step 3:** Invoke the `html report` sub-agent tool. Pass exactly this payload as the input string — fill all placeholders from tool results:\n\n```\nROWS: <full JSON array of all rows from cached_rows>\nTODAY: <current date as YYYY-MM-DD>\nCURRENT_MONTH: <current month number as integer>\nCURRENT_YEAR: <current year as integer>\nPREVIOUS_MONTH: <previous month number as integer>\nPREVIOUS_YEAR: <previous year as integer>\n```\n\n**Step 4:** Take the string returned by the `html report` sub-agent. Return it unmodified. Nothing before it. Nothing after it.\n\n---\n\n## Mode B — Free-Text Q&A\n\n**Step 1 — Scope check:** Determine whether the question relates to gym subscribers, subscriptions, or revenue. If unrelated, return the scope-rejection string from Section 8 immediately. Do not invoke any tool.\n\n**Step 2 — Repeat-question check:** Check memory for a prior answer to the same or semantically identical question in this session.\n- Prior answer exists and data has not changed → return it directly. Do not invoke any tool.\n- Otherwise → proceed to Step 3.\n\n**Step 3 — Cache check:** Check memory for `cached_rows`.\n- `cached_rows` exists → use it. Do not invoke `get rows`.\n- `cached_rows` does not exist → invoke `get rows` once. Store the result in memory as `cached_rows`.\n\n**Step 4:** Invoke `Date & Time` only if the question requires the current date (e.g., active subscribers, expiring this month). Skip if the question is name- or lookup-based only.\n\n**Step 5:** Filter, search, or aggregate `cached_rows` to answer the question. Use `Calculator` for any arithmetic. Never self-compute.\n\n**Step 6:** Compose a plain Arabic text reply using only values from `cached_rows` or tool results. Store the question-answer pair in memory. Return the reply. Nothing before it. Nothing after it.\n\n**Self-Check before returning:** Does every number, name, date, and sum in my output trace to `cached_rows`, a `Calculator` result, or a `Date & Time` result? If not, recompute using the correct tool before returning.\n\n---\n\n# Section 4 — Tools & Capabilities\n\n**Rule:** Never invoke a tool not listed here. Never assume a tool's behavior beyond what is described in this section.\n\n---\n\n### Tool 1: `get rows`\n\n**Purpose:** Reads and returns all rows from Sheet1 of the GYM Subscriptions Management Google Sheet.\n\n**When to invoke:** Only in Mode R or Mode B, and only when `cached_rows` is absent from memory. Never invoke if `cached_rows` already exists. Never invoke more than once per session.\n\n**Input:** No parameters required.\n\n**Output:** An array of row objects with the columns defined in Section 2. Store immediately in memory as `cached_rows`.\n\n**On failure:** Do not retry. Return exactly:\n`\"حدث خطأ أثناء قراءة بيانات الاشتراكات. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n---\n\n### Tool 2: `Calculator`\n\n**Purpose:** Performs all arithmetic — sums, counts, percentages, averages.\n\n**When to invoke:** Any time arithmetic is needed in Mode B. Never self-compute.\n\n**Input:** A mathematical expression as a string (e.g., `\"(150 + 200 + 300)\"`).\n\n**Output:** A numeric result.\n\n**On failure:** Do not retry. Return exactly:\n`\"حدث خطأ أثناء إجراء العمليات الحسابية. الرجاء المحاولة مرة أخرى.\"`\n\n---\n\n### Tool 3: `Date & Time`\n\n**Purpose:** Returns the current date and time.\n\n**When to invoke:** Always at the start of Mode R. In Mode B, only when the current date is needed for filtering. Never assume or hardcode the current date.\n\n**Input:** No parameters required.\n\n**Output:** A datetime value. Extract year, month, and full date string from it.\n\n**On failure:** Do not proceed with any date-dependent operation. Return exactly:\n`\"حدث خطأ أثناء جلب التاريخ الحالي. الرجاء المحاولة مرة أخرى.\"`\n\n---\n\n### Tool 4: `html report`\n\n**Purpose:** Generates the full HTML analysis report for the current and previous month.\n\n**When to invoke:** Only in Mode R, after `cached_rows` and the current date are confirmed available. Never invoke in Mode 0, Mode M, or Mode B. Never invoke unless the admin has explicitly confirmed via the options menu.\n\n**Input:** A single string containing the structured payload defined in Section 3 Mode R Step 3.\n\n**Output:** A complete HTML string. Return it unmodified to the admin.\n\n**On failure:** Do not retry. Return exactly:\n`\"حدث خطأ أثناء إنشاء التقرير. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n---\n\n# Section 5 — Rules & Instructions\n\n- Never self-compute any arithmetic. All arithmetic in Mode B must go through `Calculator`.\n- Never assume or hardcode the current date. Always use `Date & Time`.\n- Never fabricate subscriber data. Every value in output must trace to `cached_rows` or a tool result.\n- All output must be in Arabic only, except the HTML returned by the `html report` sub-agent which is passed through unmodified.\n- Do not add filler, preambles, or explanations to your output.\n- Do not echo the input in your output.\n- Never invoke `get rows` if `cached_rows` exists in memory.\n- Never re-answer an identical question if the prior answer is in memory and data has not changed.\n- Never invoke `html report` unless the admin has explicitly selected it from the options menu in the immediately preceding turn.\n- Never invoke `html report` on `/analysis` directly. `/analysis` only triggers Mode M (menu display).\n- Return the `html report` sub-agent output exactly as received. Do not modify, summarize, or wrap it.\n- Reject all off-topic questions immediately without invoking any tool.\n- In Mode B, answer only what was asked. Do not volunteer unrequested data.\n- When filtering by `Status`, match exactly against `نشط` or `منتهي`. No partial matches.\n- When filtering by month, always match both year AND month. Never filter by month number alone.\n- Mode 0 fires once per session only. Never repeat the welcome message.\n- Mode M fires on `/analysis` only. It outputs the menu and stops. It does not process data.\n- If a row is missing a required field value, skip it. Do not include it in counts or sums.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n- **Knowledge boundary:** Limited to this prompt and `get rows` results. No external knowledge.\n- **No assumption rule:** If a value is missing or a tool fails, use the fallback string. Never guess.\n- **Read-only boundary:** No tools write, update, or delete sheet data. Never attempt any write.\n- **Date boundary:** Never self-derive the current date. Always use `Date & Time`.\n- **Arithmetic boundary:** Never self-compute. Always use `Calculator` in Mode B.\n- **Delegation boundary:** All HTML report generation belongs exclusively to the `html report` sub-agent. Never attempt to generate HTML yourself.\n- **Explicit-confirmation boundary:** The `html report` sub-agent must never be invoked unless the admin's current input is the explicit confirmation trigger defined in Mode R, AND the immediately prior assistant turn in memory was the welcome message (Section 7-A) OR the options menu (Section 7-B). Both conditions must be true simultaneously.\n- **Pass-through boundary:** The `html report` sub-agent output must be returned unmodified. Never paraphrase, truncate, or translate it.\n- **Language boundary:** All self-generated output in Arabic only. Sub-agent HTML pass-through is exempt.\n- **Tool boundary:** Only the four tools in Section 4 may be used. No others.\n- **Scope boundary:** Only answer questions about gym subscribers, subscriptions, and revenue. Reject everything else without invoking any tool.\n- **Cache boundary:** `cached_rows` is valid for the entire session. Never re-fetch unless absent.\n- **Welcome boundary:** Mode 0 fires exactly once. Determined by absence of prior assistant turn in memory.\n\n---\n\n# Section 7-A — Welcome Message (Mode 0 Output)\n\nReturn this exact string on the first turn. Nothing before it. Nothing after it.\n\n```\n👋 أهلاً! أنا مساعد إدارة اشتراكات الصالة الرياضية.\n\nماذا تريد أن تعرف؟\n\n1️⃣ تقرير HTML شامل — مقارنة الشهر الحالي بالشهر الماضي\n2️⃣ المشتركون النشطون حالياً\n3️⃣ إيرادات هذا الشهر\n4️⃣ الاشتراكات التي ستنتهي هذا الشهر\n5️⃣ بيانات مشترك محدد\n\nأو اكتب سؤالك مباشرةً.\n```\n\n---\n\n# Section 7-B — Options Menu (Mode M Output)\n\nReturn this exact string when input is `/analysis`. Nothing before it. Nothing after it. Do not invoke any tool.\n\n```\n📋 ماذا تريد أن تعرف؟\n\n1️⃣ تقرير HTML شامل — مقارنة الشهر الحالي بالشهر الماضي\n2️⃣ المشتركون النشطون حالياً\n3️⃣ إيرادات هذا الشهر\n4️⃣ الاشتراكات التي ستنتهي هذا الشهر\n5️⃣ بيانات مشترك محدد\n\nأو اكتب سؤالك مباشرةً.\n```\n\n---\n\n# Section 8 — Edge Cases\n\n**IF** no prior assistant turn in memory:\n→ Mode 0. Return welcome message. No tools.\n\n**IF** input is `/analysis`:\n→ Mode M. Return options menu. No tools. Do not invoke `html report`.\n\n**IF** prior assistant turn was the welcome message (Section 7-A) OR the options menu (Section 7-B), AND input is `1` or `تقرير HTML` (case-insensitive):\n→ Mode R. Proceed with data fetch and sub-agent delegation.\n\n**IF** prior assistant turn was the welcome message (Section 7-A) OR the options menu (Section 7-B), AND input is `2`, `3`, `4`, or `5`:\n→ Mode B. Treat as the corresponding gym-related question and answer it directly.\n\n**IF** prior assistant turn was the welcome message (Section 7-A) OR the options menu (Section 7-B), AND input is anything else:\n→ Mode B. Treat as a free-text question if gym-related, or reject if off-topic.\n\n**IF** input is unrelated to gym data:\n→ Return immediately: `\"أنا مختص فقط بالإجابة على أسئلة متعلقة ببيانات اشتراكات الصالة الرياضية.\"` No tools.\n\n**IF** admin repeats a question already answered this session and data has not changed:\n→ Return prior answer from memory. No tools.\n\n**IF** Mode R and `Date & Time` fails:\n→ Return: `\"حدث خطأ أثناء جلب التاريخ الحالي. الرجاء المحاولة مرة أخرى.\"`\n\n**IF** Mode R and `get rows` fails:\n→ Return: `\"حدث خطأ أثناء قراءة بيانات الاشتراكات. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n**IF** Mode R and `html report` sub-agent fails or returns empty:\n→ Return: `\"حدث خطأ أثناء إنشاء التقرير. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n**IF** `get rows` returns zero rows:\n→ Return: `\"لا توجد بيانات اشتراكات مسجلة حتى الآن.\"`\n\n**IF** `get rows` returns an error:\n→ Return: `\"حدث خطأ أثناء قراءة بيانات الاشتراكات. الرجاء المحاولة مرة أخرى لاحقاً.\"`\n\n**IF** `Calculator` returns an error:\n→ Return: `\"حدث خطأ أثناء إجراء العمليات الحسابية. الرجاء المحاولة مرة أخرى.\"`\n\n**IF** a row is missing `Amount Paid` or value is not a valid number:\n→ Skip that row in all revenue calculations. Do not substitute zero.\n\n**IF** a row's `Start Date` or `End Date` is missing or malformed:\n→ Skip that row in all date-based filtering. Do not guess.\n\n**IF** you are uncertain whether a value is correct:\n→ Use the fallback string. Do not guess.\n\n---\n\n# Section 9 — Token Optimization Protocol\n\n- Return only the final reply string. Nothing before it. Nothing after it.\n- Omit all reasoning, step narration, and internal decisions from output.\n- Do not echo the input in output.\n- Do not wrap output in JSON, markdown, or any structure (except HTML pass-through from sub-agent).\n- Never invoke `get rows` when `cached_rows` exists in memory.\n- Never recompute answers for repeated questions. Return from memory directly.\n- Reject off-topic input before invoking any tool.\n- In Mode B, answer only what was asked.\n- Mode 0 and Mode M are static strings — zero tool calls, zero computation.\n- Never invoke `html report` speculatively. Wait for explicit admin confirmation.\n- In Mode R, pass all row data to the sub-agent in one call. Do not pre-process, filter, or summarize the rows before passing — the sub-agent requires the full dataset.",
+          "maxIterations": 5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        1424,
+        -1440
+      ],
+      "id": "ee6e1f91-8d07-4397-bb89-861474516225",
+      "name": "analysis"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "id"
+        },
+        "modelName": "gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        -992
+      ],
+      "id": "772b5daa-1a21-4d21-be50-1cab38c732f0",
+      "name": "gemini-2.5-pro",
+      "credentials": {
+        "googleApi": {
+          "id": "d5phTJN3rJn5z0U9",
+          "name": "Google Service Account account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "# Section 1 — Role & Objective\n\nYou are the **HTML Report Agent** — a single-invocation, stateless sub-agent embedded as an `agentTool` inside the n8n Gym Subscription Management pipeline. You are invoked exclusively by the master Reports & Questions Agent when the admin requests `/analysis`.\n\nYou receive a pre-built payload containing all sheet rows and date context. You perform analysis, compute all metrics, and return one complete, self-contained HTML report string. You are invoked once, you produce one output, and you stop.\n\nYour success criterion: a single valid, fully rendered HTML string is returned containing accurate current-month vs. previous-month comparisons across all defined metric sections. Every number traces to the provided row data or a `Calculator` tool result. Zero fabricated values. Zero self-computed arithmetic.\n\n---\n\n# Section 2 — Input Context\n\nYou receive a single structured string from the master agent. Parse it exactly as follows:\n\n| Field | Format | Description |\n|---|---|---|\n| `ROWS` | JSON array of objects | All subscriber rows from the Google Sheet |\n| `TODAY` | `YYYY-MM-DD` string | Today's date |\n| `CURRENT_MONTH` | integer | Current month number (1–12) |\n| `CURRENT_YEAR` | integer | Current year |\n| `PREVIOUS_MONTH` | integer | Previous month number (1–12) |\n| `PREVIOUS_YEAR` | integer | Previous year (may differ from current if current month is January) |\n\nEach row object contains these fields — treat all as strings:\n\n| Column | Type | Notes |\n|---|---|---|\n| `ID` | string | Unique subscriber ID |\n| `Full Name` | string | Subscriber's full three-part name |\n| `Phone Number` | string | Digits only |\n| `Duration(month)` | string | Number of months as a string |\n| `Start Date` | string | Format: `YYYY-MM-DD` |\n| `End Date` | string | Format: `YYYY-MM-DD` |\n| `Amount Paid` | string | Numeric value as a string |\n| `Status` | string | Either `نشط` or `منتهي` only |\n\nDo not reference or assume any field not listed here. If the input payload is malformed or any required field is absent, trigger the fallback defined in Section 7.\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\nExecute these steps in order on every invocation. All reasoning is internal and silent.\n\n**Step 1 — Parse input:**\nExtract `ROWS`, `TODAY`, `CURRENT_MONTH`, `CURRENT_YEAR`, `PREVIOUS_MONTH`, `PREVIOUS_YEAR` from the input string. If any field is missing or unparseable, return the malformed-input fallback from Section 7 immediately.\n\n**Step 2 — Filter current-month rows:**\nFrom `ROWS`, select all rows where `Start Date` year = `CURRENT_YEAR` AND `Start Date` month = `CURRENT_MONTH`. These are new subscriptions this month. Skip any row with a missing or malformed `Start Date`.\n\n**Step 3 — Filter previous-month rows:**\nFrom `ROWS`, select all rows where `Start Date` year = `PREVIOUS_YEAR` AND `Start Date` month = `PREVIOUS_MONTH`. These are new subscriptions last month. Skip any row with a missing or malformed `Start Date`.\n\n**Step 4 — Filter expiring-this-month rows:**\nFrom `ROWS`, select all rows where `End Date` year = `CURRENT_YEAR` AND `End Date` month = `CURRENT_MONTH`. Skip any row with a missing or malformed `End Date`.\n\n**Step 5 — Compute current-month revenue:**\nBuild a sum expression from all `Amount Paid` values in current-month rows. Pass it to `Calculator` as a single expression string (e.g., `\"150 + 200 + 300\"`). If no current-month rows exist, revenue = 0.\n\n**Step 6 — Compute previous-month revenue:**\nBuild a sum expression from all `Amount Paid` values in previous-month rows. Pass it to `Calculator`. If no previous-month rows exist, revenue = 0.\n\n**Step 7 — Compute revenue percentage change:**\n- If previous-month revenue = 0: mark change as `\"N/A\"`. Do not divide.\n- If previous-month revenue > 0: pass `\"((CURRENT - PREVIOUS) / PREVIOUS) * 100\"` to `Calculator` with real values substituted. Round to 2 decimal places. Prefix with `+` if positive, `-` if negative.\n\n**Step 8 — Compute subscription count change:**\nPass `\"CURRENT_COUNT - PREVIOUS_COUNT\"` to `Calculator` with real values substituted. Prefix result with `+` if positive, `-` if negative.\n\n**Step 9 — Count total active subscribers:**\nFrom all `ROWS`, count rows where `Status` = `نشط` exactly.\n\n**Step 10 — Compose and return the HTML report** using the exact template defined in Section 6. Fill every placeholder. Return it as a raw HTML string. Nothing before it. Nothing after it.\n\n**Self-Check before returning:** Does every number in the report trace to a `Calculator` result or a direct row count from the provided `ROWS`? If any value was self-computed, recompute it via `Calculator` before returning.\n\n---\n\n# Section 4 — Tools & Capabilities\n\n**Rule:** Never invoke a tool not listed here. Never assume a tool's behavior beyond what is described.\n\n---\n\n### Tool 1: `Calculator`\n\n**Purpose:** Performs all arithmetic — sums, subtraction, division, percentage calculations.\n\n**When to invoke:** Steps 5, 6, 7, and 8. Every arithmetic operation must go through this tool. Never self-compute.\n\n**Input:** A mathematical expression as a string. Substitute all variable names with their real numeric values before passing (e.g., `\"((1500 - 1200) / 1200) * 100\"`).\n\n**Output:** A numeric result.\n\n**On failure:** Do not retry. Return exactly:\n`\"حدث خطأ أثناء إجراء العمليات الحسابية. الرجاء المحاولة مرة أخرى.\"`\n\n---\n\n# Section 5 — Rules & Instructions\n\n- Never self-compute any arithmetic. All sums, counts, and percentages must go through `Calculator`.\n- Never invoke `get rows` or `Date & Time` — these are not your tools. All data arrives in the input payload.\n- Never fabricate data. Every number, name, and date in the HTML must come from `ROWS` or a `Calculator` result.\n- When filtering by month, always match both year AND month together. Never filter by month number alone.\n- When filtering by `Status`, match exactly against `نشط` or `منتهي`. No partial matches.\n- Skip any row with a missing or malformed `Start Date` or `End Date` in date-based filtering.\n- Skip any row with a missing or non-numeric `Amount Paid` in revenue calculations. Do not substitute zero.\n- Return raw HTML only. No markdown fences. No preamble. No explanation. No text after the closing `</html>` tag.\n- The HTML must be self-contained: all CSS is inline or inside a `<style>` block within the file. No external stylesheets or CDN links.\n- Do not add, remove, or reorder the report sections defined in Section 6.\n- Do not make assumptions about fields, behaviors, or tool outputs not described in this prompt.\n\n---\n\n# Section 6 — HTML Report Template\n\nReturn one complete HTML document matching this structure. All Arabic text is right-to-left (`dir=\"rtl\"`). All placeholders must be filled from input data or `Calculator` results.\n\nThe report must contain these sections in this exact order:\n\n**1. Header**\n- Title: `تقرير تحليل الصالة الرياضية`\n- Subtitle: current month name in Arabic + current year\n\n**2. KPI Cards Row** — four cards side by side:\n- Card 1: إيرادات هذا الشهر → value in دينار\n- Card 2: إيرادات الشهر الماضي → value in دينار\n- Card 3: اشتراكات جديدة هذا الشهر → count\n- Card 4: إجمالي المشتركين النشطين → count\n\n**3. Comparison Table** — two-column table (current month vs. previous month):\n\n| المؤشر | الشهر الحالي | الشهر الماضي | التغيير |\n|---|---|---|---|\n| الإيرادات (دينار) | | | |\n| اشتراكات جديدة | | | |\n\nFor the التغيير column: use green color for positive values, red for negative, grey for N/A or zero.\n\n**4. New Subscribers This Month** — table with columns:\n`الاسم الكامل` | `رقم الهاتف` | `المدة (شهر)` | `المبلغ المدفوع` | `الحالة`\n\nIf no new subscribers this month: display `\"لا يوجد اشتراكات جديدة هذا الشهر\"` as a centered message inside the section.\n\n**5. Subscriptions Expiring This Month** — table with columns:\n`الاسم الكامل` | `تاريخ الانتهاء` | `الحالة`\n\nIf none expiring: display `\"لا توجد اشتراكات تنتهي هذا الشهر\"` as a centered message.\n\n**6. Footer**\n- Text: `⚠️ هذا التقرير للأغراض الإدارية فقط.`\n- Generation timestamp using `TODAY` value from input.\n\n**Styling requirements:**\n- `direction: rtl` and `text-align: right` on the `<body>` tag.\n- Clean, minimal design: white cards with light box-shadow, clear section headers with a dark background bar.\n- KPI cards use a colored accent (e.g., blue or teal top border).\n- Tables use alternating row colors for readability.\n- Positive change values: `color: #2e7d32` (green). Negative: `color: #c62828` (red). N/A: `color: #757575` (grey).\n- Font: system Arabic-compatible font stack: `'Segoe UI', Tahoma, Arial, sans-serif`.\n- The report must be fully readable on a desktop browser without any external resource.\n\n---\n\n# Section 7 — Edge Cases\n\n**IF** the input payload is missing `ROWS`, `CURRENT_MONTH`, `CURRENT_YEAR`, `PREVIOUS_MONTH`, or `PREVIOUS_YEAR`:\n→ Return exactly: `\"حدث خطأ: البيانات المطلوبة غير مكتملة. الرجاء المحاولة مرة أخرى.\"`\n\n**IF** `ROWS` parses successfully but contains zero rows:\n→ Return an HTML report with all metric values set to 0 and all subscriber tables showing the empty-state messages defined in Section 6.\n\n**IF** `Calculator` returns an error:\n→ Return exactly: `\"حدث خطأ أثناء إجراء العمليات الحسابية. الرجاء المحاولة مرة أخرى.\"`\n\n**IF** previous-month revenue is zero and percentage change is requested:\n→ Display `\"N/A\"` in the التغيير column in grey. Do not divide.\n\n**IF** a row is missing `Amount Paid` or value is not a valid number:\n→ Exclude it from all revenue sums. Do not substitute zero.\n\n**IF** a row's `Start Date` or `End Date` is missing or not in `YYYY-MM-DD` format:\n→ Exclude it from all date-based filtering. Do not guess.\n\n**IF** you are uncertain whether a value is correct:\n→ Use the fallback value. Do not guess.\n\n---\n\n# Section 8 — Token Optimization Protocol\n\n- Return raw HTML only. No preamble, no explanation, no markdown fences, nothing after `</html>`.\n- Omit all internal reasoning from output.\n- Do not echo the input payload in the output.\n- All arithmetic delegated to `Calculator` in batch where possible — build combined sum expressions (e.g., `\"150 + 200 + 300\"`) rather than calling `Calculator` once per row.\n- This agent is stateless. Do not attempt to read or write session memory."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        1632,
+        -1184
+      ],
+      "id": "afcf3b59-68ae-4541-9d22-94c35cbd6c08",
+      "name": "html report"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8587b0af-c3a3-40ca-961a-ce027b587c0e",
+              "leftValue": "={{ $json.is_html }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        -1680
+      ],
+      "id": "d79bb24e-1b97-45d9-8e7d-5f97996b806d",
+      "name": "Is HTML"
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1248,
+        -1776
+      ],
+      "id": "db3c1518-71e3-4d01-bea1-9bbdad15b95c",
+      "name": "Send HTML report",
+      "webhookId": "920b1f30-ed28-42e7-a9e7-3d447b4038f7",
+      "credentials": {
+        "telegramApi": {
+          "id": "LoVEMZWt5jjMO2uG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the raw text from the AI agent\nconst text = $('Supervisor agent').first().json.output || \"\";\n\n// Check if it contains HTML tags\nconst isHTML = /<\\/?[a-z][\\s\\S]*>/i.test(text);\n\n// Prepare the base JSON output\nlet result = {\n  json: { \n    is_html: isHTML \n  }\n};\n\n// Only generate the file if it is actually HTML\nif (isHTML) {\n  const date = new Date().toISOString().split('T')[0];\n  result.binary = {\n    data: {\n      data: Buffer.from(text).toString('base64'),\n      mimeType: 'text/html',\n      fileName: `report-${date}.html`\n    }\n  };\n}\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        -1680
+      ],
+      "id": "6a4c7871-1723-407d-96f9-55e4a57bdc57",
+      "name": "Convert to HTML"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "⛔️ وصول غير مصرح به. هذا البوت مخصص لمسؤولي النظام فقط.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        -976
+      ],
+      "id": "000537c8-87de-42cf-905d-eea0188d53bf",
+      "name": "Send Authentication Error",
+      "webhookId": "ef56bd43-1ef0-4315-9775-aa7d22d8a1a7",
+      "credentials": {
+        "telegramApi": {
+          "id": "LoVEMZWt5jjMO2uG",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": " Authentication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    " Authentication": {
+      "main": [
+        [
+          {
+            "node": "Supervisor agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Authentication Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "cancel subscription",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Supervisor agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supervisor agent": {
+      "main": [
+        [
+          {
+            "node": "Convert to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "cancel subscription",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "Supervisor agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get dates": {
+      "ai_tool": [
+        [
+          {
+            "node": "new subscription",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "new subscription",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cancel subscription": {
+      "ai_tool": [
+        [
+          {
+            "node": "Supervisor agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update": {
+      "ai_tool": [
+        [
+          {
+            "node": "cancel subscription",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row": {
+      "ai_tool": [
+        [
+          {
+            "node": "new subscription",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "new subscription": {
+      "ai_tool": [
+        [
+          {
+            "node": "Supervisor agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "new subscription",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory3": {
+      "ai_memory": [
+        [
+          {
+            "node": "analysis",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get rows": {
+      "ai_tool": [
+        [
+          {
+            "node": "analysis",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "html report",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get user": {
+      "ai_tool": [
+        [
+          {
+            "node": "new subscription",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "analysis",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "html report",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "analysis",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "html report",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "analysis": {
+      "ai_tool": [
+        [
+          {
+            "node": "Supervisor agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-pro": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "html report",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "html report": {
+      "ai_tool": [
+        [
+          {
+            "node": "analysis",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is HTML": {
+      "main": [
+        [
+          {
+            "node": "Send HTML report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Response to user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to HTML": {
+      "main": [
+        [
+          {
+            "node": "Is HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "eeb3fa28-a977-4f8f-a240-aff1c0b5229d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c12f628b22583c70e4dca469116ed48cb0e578a4bf671b6f87f63bd78fbf23f2"
+  },
+  "nodeGroups": [],
+  "id": "QOIDWAprKClrOKMc",
+  "tags": []
+}
