@@ -1,0 +1,306 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCZDFNE54UZYGLewEGDp4Y0g"
+      },
+      "name": "YouTube RSS Trigger",
+      "type": "n8n-nodes-base.rssFeedReadTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        176
+      ],
+      "id": "56f292b4-d60f-4a15-acae-8e46d5c00fb2"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "get",
+        "videoId": "={{ $json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        448,
+        176
+      ],
+      "id": "3b88f9dc-fc83-4536-840e-f853cf1ecc38",
+      "name": "Get a video",
+      "alwaysOutputData": true,
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.id;\n\nif (!raw) {\n  return { json: {} };\n}\n\n// Remove the 'yt:video:' prefix to get just the ID\nconst id = raw.replace('yt:video:', '');\n\n// Return the extracted ID\nreturn {\n  json: {\n    id: id\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        176
+      ],
+      "id": "c8bc8e6f-4d1e-441e-9cb5-815c3a6ac52e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        176
+      ],
+      "id": "6d020026-00a6-4c2c-8d52-28bdcb02f7f2",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Video metadata from the \"Get a video\" node\nconst video = $('Get a video').item.json;\nconst title = video.snippet?.title || 'Untitled video';\nconst description = video.snippet?.description || 'No description provided.';\nconst videoId = video.id;\n\n// Original YouTube link (falls back to a constructed URL if missing)\nconst link = $('YouTube RSS Trigger').item.json.link || `https://www.youtube.com/watch?v=${videoId}`;\n\n// AI summary from the Gemini response (this node's input)\nconst ai = $input.first().json.candidates?.[0]?.content?.parts?.[0]?.text || 'No summary available.';\n\n// Build the full message with title, link, description and AI summary\nconst message = [\n  `**${title}**`,\n  link,\n  '',\n  '**Description:**',\n  description,\n  '',\n  '**AI Summary:**',\n  ai\n].join('\\n');\n\n// Discord messages are capped at 2000 characters (not 4000). Split on\n// line breaks first so words/markdown don't get cut mid-sentence, then\n// hard-split anything still too long.\nconst DISCORD_LIMIT = 2000;\nconst lines = message.split('\\n');\nconst chunks = [];\nlet current = '';\n\nfor (const line of lines) {\n  const candidate = current ? `${current}\\n${line}` : line;\n  if (candidate.length > DISCORD_LIMIT) {\n    if (current) chunks.push(current);\n    if (line.length > DISCORD_LIMIT) {\n      for (let i = 0; i < line.length; i += DISCORD_LIMIT) {\n        chunks.push(line.slice(i, i + DISCORD_LIMIT));\n      }\n      current = '';\n    } else {\n      current = line;\n    }\n  } else {\n    current = candidate;\n  }\n}\nif (current) chunks.push(current);\n\nreturn chunks.map(chunk => ({ json: { text: chunk , length :chunk.length} }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        176
+      ],
+      "id": "9c000f5c-99b8-4212-bbe0-e0ac29e7c314",
+      "name": "Chunking"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1531264583166333078",
+          "mode": "id"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1531324913334489229",
+          "mode": "list",
+          "cachedResultName": "youtube",
+          "cachedResultUrl": "https://discord.com/channels/1531264583166333078/1531324913334489229"
+        },
+        "content": "={{ $json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        176
+      ],
+      "id": "dcb1c61c-94dd-465a-af18-3112a9dbcc24",
+      "name": "Send a message",
+      "webhookId": "ee42382d-b424-446d-8e38-01e19c8bb104",
+      "credentials": {
+        "discordOAuth2Api": {
+          "id": "AK3Fhb15LCgO3hSQ",
+          "name": "Discord account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.1-pro-preview:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"fileData\": {\n            \"fileUri\": \"{{ $('YouTube RSS Trigger').item.json.link }}\", \n            \"mimeType\": \"video/mp4\"\n          }\n        },\n        {\n          \"text\": \"Give me a summary of this video.\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "name": "Gemini Video analyze Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        176
+      ],
+      "id": "329187ba-ec7f-480f-8b3e-8098c2efbd03",
+      "credentials": {
+        "googleApi": {
+          "id": "j071sxoTH7hcH8Z7",
+          "name": "Google Service Account account 6"
+        },
+        "httpQueryAuth": {
+          "id": "DSCCILiwF1RJ9aed",
+          "name": "Query Auth account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-1003704956479",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        -16
+      ],
+      "id": "a2d2f369-d7b0-4dea-bde9-2d0208406ec1",
+      "name": "Send a text message",
+      "webhookId": "ae0b6e1a-fbb3-40f9-b81c-30c80c9cae91",
+      "credentials": {
+        "telegramApi": {
+          "id": "Gqeen4BhBfVwdn4c",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1568,
+        176
+      ],
+      "id": "991b63e7-6526-4e3b-a5d2-a4e7bb653cbb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "content": "# 📺 YouTube Upload → AI Summary Broadcaster\n\nWatches a YouTube channel for new uploads, summarizes each video with Gemini, and posts the result to chat.\n\n## 🔄 Flow\n1. **YouTube RSS Trigger** — polls the channel feed for new uploads\n2. **Code in JavaScript** — cleans the video ID\n3. **Get a video** — fetches title, description, thumbnails via YouTube API\n4. **Gemini Video analyze Request** — generates an AI summary\n5. **Chunking** — builds the message (title + link + description + summary) and splits into platform-safe chunks\n6. **Send a message** — posts each chunk to Discord\n\n## ⚠️ Notes\n- Discord cap: 2000 chars/message. Telegram cap: 4096 chars — different chunk sizes needed if both are used\n- Requires YouTube OAuth2, Google Service Account (Gemini), and Discord OAuth2 credentials",
+        "height": 560,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        -496
+      ],
+      "typeVersion": 1,
+      "id": "5df2193d-8d71-418f-a702-986818183b79",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "YouTube RSS Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a video": {
+      "main": [
+        [
+          {
+            "node": "Gemini Video analyze Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunking": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Gemini Video analyze Request": {
+      "main": [
+        [
+          {
+            "node": "Chunking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3b17fc8fda52f1536873eae51fd330efe441dcec4ab88062e1c81b64db2cef85"
+  }
+}
