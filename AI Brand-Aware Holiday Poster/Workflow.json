@@ -1,0 +1,683 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "list",
+          "cachedResultName": "n8n-gemini-app"
+        },
+        "modelName": "gemini-3.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        144,
+        224
+      ],
+      "id": "61ab1b94-cd05-42cc-8fa2-964f46ab89dc",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "UF3njFHn5PkiRYTm",
+          "name": "Google Service Account account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "postAs": "organization",
+        "organization": "138344006",
+        "text": "={{ $('Post Agent').item.json.output.data.post_text }}",
+        "shareMediaCategory": "IMAGE",
+        "binaryPropertyName": "={{ $('Convert to File').item.binary.data }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        2176,
+        48
+      ],
+      "id": "e7a04612-222e-429b-94d3-a004fdb6da9a",
+      "name": "Create a post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "ra6xOb5NN344fRGp",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1SxRrL7ECeOKxZ48gzerZGeLPQy3vlX3SmSJXEmTXesw",
+          "mode": "list",
+          "cachedResultName": "Company data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SxRrL7ECeOKxZ48gzerZGeLPQy3vlX3SmSJXEmTXesw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SxRrL7ECeOKxZ48gzerZGeLPQy3vlX3SmSJXEmTXesw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        224
+      ],
+      "id": "24a9a5ef-e8b1-4836-be04-a17cbfe938cb",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "j071sxoTH7hcH8Z7",
+          "name": "Google Service Account account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Post Agent').item.json.output.data.email }}",
+        "subject": "تم نشر المنشور بنجاح",
+        "message": "=<div dir=\"rtl\" style=\"text-align: right; font-family: Arial, sans-serif;\">\n  <h3 style=\"color: #28a745;\">✅ تم نشر المنشور بنجاح!</h3>\n  \n  <p>يمكنك معاينة المنشور على LinkedIn من خلال الرابط التالي:</p>\n  \n  <p>\n    <a href=\"{{ `https://www.linkedin.com/feed/update/`+$json.urn }}\" style=\"display: inline-block; padding: 10px 15px; background-color: #0077b5; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n      عرض المنشور\n    </a>\n  </p>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        48
+      ],
+      "id": "80b871f4-dbee-4cd0-b043-50e745b3eeca",
+      "name": "result",
+      "webhookId": "b065f01f-6e34-49b9-9b12-680881560c30",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EcVJ3jqmfLxDGVqT",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "=image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        0
+      ],
+      "id": "44a39c06-fc36-4642-8735-3ed5fc957265",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"status\": \"success\",\n  \"data\": {\n    \"post_text\": \"كل عام والأردن بألف خير 🇯🇴\\n\\nبمناسبة عيد الاستقلال المجيد، نبارك لجلالة الملك عبدالله الثاني وللشعب الأردني الكريم هذه المناسبة الوطنية العزيزة.\\n\\nنفتخر بانتمائنا لهذا الوطن المعطاء، ونجدد التزامنا في Episodic Stack بمواصلة الإسهام في نهضته التقنية من خلال حلول البنية التحتية السحابية والأتمتة الذكية.\\n\\nعاش الأردن، وكل عام والجميع بخير 🎉\\n\\n#CloudNative #DevOps #Automation #TechTrends\",\n    \"image_prompt\": \"A elegant minimalist illustration celebrating Jordan's Independence Day, dominated by Jordan's national flag colors — black, white, green horizontal bands with the red triangle and white seven-pointed star — rendered as flowing fabric-like ribbons and geometric shapes across the composition, with a subtle silhouette of Jordanian landscape elements (desert dunes or a stylized eagle) in the background, warm golden-hour lighting; a faint, subtle undertone of deep blue circuit-like linework woven quietly into the background corners as a light nod to a cloud infrastructure brand, without competing with the flag imagery, dark mode aesthetic, sleek 3D render style, no text, no logos, no human figures\",\n    \"email\": \"zaidradaideh.dev@gmail.com\"\n  },\n  \"err\": null,\n  \"meta\": {\n    \"event_id\": \"0i0qnh9v3fpjphdb7h1v3q9f52\"\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        224
+      ],
+      "id": "7c1f7534-7413-4d31-808e-6a163e8771d9",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a92ca7f3-a58e-488e-8fe2-bfe3bd19bf18",
+                    "leftValue": "={{ $json.data['مذا بعد؟'] }}",
+                    "rightValue": "نشر",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "post"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data['مذا بعد؟'] }}",
+                    "rightValue": "اعادة التوليد",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "06f4c6c4-358d-4468-8652-9370c4d258aa"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Regenerate"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "10985e4e-91fa-4272-a0ca-4946b9281510",
+                    "leftValue": "={{ $json.data['مذا بعد؟'] }}",
+                    "rightValue": "رفض",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reject"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1952,
+        112
+      ],
+      "id": "78f81ac6-89a3-4a6f-86cf-ecf425b702bd",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "395a8a2615451dbbb18be5d522214ba70bffdc463ff43279adeef1ba8f22b662@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "test workflow "
+        },
+        "limit": 1,
+        "timeMin": "={{ $json.timestamp }}",
+        "options": {
+          "orderBy": "startTime"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        128
+      ],
+      "id": "2fedd4d9-dd3c-432b-9031-3c8cf3b4e367",
+      "name": "Get many events",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "rrsCHxdKFzD7AyhL",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -304,
+        128
+      ],
+      "id": "6c898762-5df7-4ef4-ab27-8fec519876a5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash-image:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \" {{ $json.output.data.image_prompt }} \"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        608,
+        0
+      ],
+      "id": "c0b7599b-62af-45bf-b289-3f55072e4cda",
+      "name": "Generate image",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "DSCCILiwF1RJ9aed",
+          "name": "Query Auth account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b097b2d3-85fb-49c2-99b9-ec3960c15c69",
+              "name": "image",
+              "value": "={{ $json.candidates[0].content.parts[0].inlineData.data}} ||{{ $json.candidates[0].content.parts[1].inlineData.data}} ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        0
+      ],
+      "id": "025b9b16-20a3-43a4-af78-8a7476257302",
+      "name": "Extract image"
+    },
+    {
+      "parameters": {
+        "content": "# Event-to-LinkedIn Auto-Publisher\n\n**Purpose:** Automates the creation and publishing of brand-aligned LinkedIn posts for cultural and national events.\n\n**Workflow Steps:**\n* **Trigger & Fetch:** Runs on a schedule to pull upcoming events from Google Calendar.\n* **AI Agent (Content):** Fetches brand guidelines from Google Sheets, drafts an Arabic LinkedIn caption, and writes an English image generation prompt.\n* **Vertex AI (Image):** Generates the visual based on the AI Agent's prompt and converts the data into a binary file.\n* **Approval Gate:** Sends an interactive HTML email with a preview. \n    * **Approve:** Publishes directly to LinkedIn and sends a confirmation email with the live URL.\n    * **Regenerate:** Restarts the workflow to draft a new post and image.\n    * **Reject:** Terminates the execution.",
+        "height": 432,
+        "width": 736
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -224,
+        -544
+      ],
+      "typeVersion": 1,
+      "id": "56c0c9de-e5e7-4e79-97d8-6a9d5bd94bff",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "sendTo": "={{ $('Post Agent').item.json.output.data.email }}",
+        "subject": "Approval required For link it in post",
+        "message": "=<div dir=\"rtl\" style=\"text-align: right;\">\n  <h3>مطلوب الموافقة على منشور LinkedIn</h3>\n\n  <p><b>نص المنشور:</b></p>\n  <blockquote style=\"background: #f4f4f4; padding: 10px; border-right: 4px solid #0077b5; margin-right: 0;\">\n    {{$('Post Agent').item.json.output.data.post_text }}\n  </blockquote>\n\n  <p><b>معاينة الصورة:</b></p>\n  <img alt=\"صورة المنشور\" style=\"max-width: 400px; width: 100%; height: auto; border-radius: 8px; display: block;\" src=\"https://drive.google.com/uc?export=view&id={{ $('Upload file').item.json.id }}\" />\n  <p><i>يرجى استخدام الأزرار أدناه للموافقة على النشر في لينكد إن أو رفضه.</i></p>\n</div>",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "مذا بعد؟",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "نشر"
+                  },
+                  {
+                    "option": "اعادة التوليد"
+                  },
+                  {
+                    "option": "رفض"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1728,
+        0
+      ],
+      "id": "c12041ef-b89c-4547-bbf1-32de0c842d5c",
+      "name": "Send message and wait for response1",
+      "webhookId": "3eee22d1-7e3e-4f14-bd5b-ab3953583fa3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EcVJ3jqmfLxDGVqT",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=New calendar event detected — process this event according to your instructions.\n\nEvent Name: {{ $json.summary }}\nEvent Description: {{ $json.description ?? \"No description provided\" }}\nStart Date/Time: {{ $json.start?.dateTime ?? \"Not specified\" }}\nTimezone: {{ $json.start?.timeZone ?? \"Not specified\" }}\nEvent ID: {{ $json.id ?? \"Not specified\" }}\n\nInstructions:\n1. Call the Google Sheets tool to retrieve the company brand profile.\n2. Determine whether this event is a national or religious observance worth posting about, based only on the Event Name and Event Description above.\n3. If applicable, generate the JSON output exactly as defined in your system instructions. If not applicable, return the \"event_not_applicable\" error response.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# Section 1 — Role & Objective\n\nYou are the **Cultural & National Events LinkedIn Content Agent**, operating as the AI Agent node inside an n8n workflow. Your sole task is: given one Google Calendar event and one company profile row, produce a single JSON object containing an Arabic LinkedIn post caption, an English image-generation prompt, and the company's contact email, tailored to the event first and the company's brand second.\n\nSuccess criterion: a JSON object matching the schema in Section 9 exactly, where `post_text` is a publish-ready Arabic LinkedIn caption within LinkedIn's hard 3,000-character limit and includes 1–2 event-appropriate emojis, `image_prompt` is a complete English prompt visually anchored in the event's own recognizable symbols (flag for national events, moon/mosque or other category-appropriate iconography for religious events) with the company's influence capped at roughly 20%, and `email` is reproduced exactly from the sheet for downstream routing.\n\n---\n\n# Section 2 — Input Context\n\nYou will receive a calendar event object from the Google Calendar Trigger node with these fields:\n\n*   `summary` (Required): The event title (e.g. \"Jordan Independence Day\").\n*   `description` (Optional): Free-text details about the event. May contain HTML tags (e.g. `<mark>`) — strip any markup before using the text.\n*   `start.dateTime` (Required): ISO 8601 event start timestamp, includes timezone offset.\n*   `start.timeZone` (Optional): IANA timezone string (e.g. \"Asia/Amman\").\n*   `id` (Optional): Calendar event ID, used only for traceability in output, never displayed to the reader.\n\nYou also have access to the **Get row(s) in sheet in Google Sheets** tool, which returns company brand profile rows with these columns:\n\n*   `company_name` (Required)\n*   `logo_url` (Optional): Not used by this agent.\n*   `brand_colors` (Required): Comma-separated hex codes, used only as a light secondary accent in the image.\n*   `visual_style` (Required): Descriptive phrase for secondary image styling.\n*   `industry_niche` (Required): Used only as a subtle secondary accent in the image, never the main subject.\n*   `brand_voice` (Required): Descriptive phrase for caption tone.\n*   `default_hashtags` (Required): Space-separated hashtags appended to the post.\n*   `email` (Required): Must be reproduced exactly, character for character, in the output. Never use it to draft the post text or image prompt.\n\nDo not reference or assume any field not listed here. If an expected required field is absent, trigger the fallback behavior defined in Section 7.\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\nStep 1: Read and validate the calendar event fields against Section 2. Strip any HTML markup from `description`.\n\nStep 2: Call the **Get row(s) in sheet in Google Sheets** tool to retrieve the company brand profile. Extract `company_name`, `visual_style`, `industry_niche`, `brand_voice`, `brand_colors`, `default_hashtags`, and `email` from the returned row. Treat all seven as required; treat `logo_url` as optional and unused by this agent.\n\nStep 3: Classify the event into one of these categories using only `summary` and `description`:\n  a) **National/patriotic** — a specific country is explicitly named.\n  b) **Religious** — a specific religion or religious occasion is identifiable (e.g. Islamic, Christian, Jewish).\n  c) **Other cultural/awareness observance** — identifiable but doesn't fit (a) or (b).\n  d) **Not applicable** — no cultural/national/religious significance is inferable.\nDo not use outside knowledge beyond what these two fields state. If category (d) applies, use the fallback in Section 7.\n\nStep 4: Compose `post_text` in Modern Standard Arabic, matching the company's `brand_voice`, referencing the event, and ending with `default_hashtags`. Include exactly 1–2 emojis in `post_text` per the category-specific rule in Section 5.\n\nCompose `image_prompt` in English per the category determined in Step 3, following the visual anchor rules in Section 5. The event's own recognizable symbols must be the dominant, clearly visible subject; the company's `visual_style`, `brand_colors`, and `industry_niche` may only appear as a minor secondary accent, never exceeding roughly 20% of the described visual weight. Depict the event's theme without any text, logos, or human faces rendered in the image itself. Carry `email` through unchanged into the output.\n\nStep 5: Verify your output matches the schema in Section 9 before returning it.\n\nStep 6: If any step fails, execute the fallback defined in Section 7.\n\n**Self-check:** Before producing your final output, perform a self-check: Does every value in your output come directly from the input data or a tool result? If any value was inferred or assumed without a traceable source, replace it with the fallback value.\n\n---\n\n# Section 4 — Tools & Capabilities\n\n**Tool Name:** Get row(s) in sheet in Google Sheets\n*   **Purpose:** Retrieve the company's brand profile for secondary post styling and contact routing.\n*   **When to invoke it:** Always, exactly once, after validating the calendar event in Step 1.\n*   **Expected input:** No parameters required from you; the tool returns all configured rows.\n*   **Expected output:** Rows with the columns listed in Section 2.\n*   **On failure:** Execute the fallback defined in Section 7. Do not fabricate brand details or an email address.\n\nNever invoke a tool not listed here. Never assume a tool's behavior beyond what is described in this section.\n\n---\n\n# Section 5 — Rules & Instructions\n\n*   Do not add conversational filler, preambles, or explanations to your output.\n*   Do not echo the raw input event JSON or the raw sheet row in your output.\n*   Do not fabricate historical, religious, or cultural facts about the event beyond what `summary` and `description` state. If you need more context to write respectfully and accurately, keep the post general rather than inventing specifics.\n*   Execute deterministically: given the same event and brand row, always produce consistent style and structure.\n*   Do not make assumptions about fields, APIs, or behaviors not described in this prompt.\n*   Never modify the output schema to add extra fields, even if they seem helpful.\n*   `post_text` must never exceed 3,000 characters (LinkedIn's absolute platform limit, counting letters, numbers, punctuation, spaces, line breaks, and emojis).\n*   Write the opening line of `post_text` — the hook — to be complete and meaningful within the first 210 characters, since LinkedIn truncates posts behind a \"see more\" link at approximately that point on desktop (roughly 140 on mobile).\n*   Target 800–1,500 characters for `post_text` as the default length band; only exceed this band if the event genuinely warrants more context.\n\n**Emoji rule for `post_text` (exactly 1–2 emojis):**\n*   National/patriotic event with an explicitly named country → use that country's flag emoji (e.g. 🇯🇴 for an event naming Jordan).\n*   Religious event → use a widely recognized emoji for that occasion (e.g. 🌙 for an Islamic occasion, ✝️ or 🎄 for a Christian occasion, ✡️ for a Jewish occasion).\n*   Other observance / no country named → use a generic celebratory emoji (e.g. 🎉).\n*   Never exceed two emojis. Do not include emojis in `image_prompt`.\n\n**Visual anchor rules for `image_prompt` (category-specific, mandatory):**\n*   **National/patriotic events:** the named country's actual flag must be clearly visible and identifiable in the image (correct colors, pattern, and emblem where applicable) — the flag is the dominant subject, not a subtle color hint.\n*   **Religious events:** include the category-appropriate recognizable iconography as the dominant subject — for an Islamic occasion, this means a crescent moon paired with a mosque silhouette (dome and minaret); for other religions, use the equivalent widely recognized, respectful symbols and structures for that occasion (e.g. a church silhouette and star for Christmas). Never depict deities, prophets, or sacred/worshipped figures.\n*   **Other cultural/awareness observances:** use the most direct, widely recognized visual symbol for that observance as the dominant subject.\n*   In every case, the company's `visual_style`, `brand_colors`, and `industry_niche` must be reduced to a minor secondary accent — capped at roughly 20% of the overall visual description (e.g. a subtle background texture, one small complementary color touch, or a faint supporting motif in a corner) — and must never replace, outweigh, or visually compete with the event's own dominant symbols.\n*   `image_prompt` must describe only visual composition, style, color, and mood — never text, slogans, or logos to be rendered inside the image, since AI image models render embedded text unreliably.\n*   Do not include emojis in `image_prompt`.\n\n*   Reproduce `email` exactly as returned by the sheet — no formatting changes, no masking, no validation rewrites.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n*   **Knowledge boundary:** Your knowledge is limited to what is described in this prompt, what the calendar event contains, and what the Google Sheets tool returns. Do not use external knowledge to fill gaps about the specific event's history or significance beyond the provided description.\n*   **No assumption rule:** If a required piece of information is missing from the input, do not guess. Use the fallback behavior.\n*   **Country/religion grounding rule:** Do not infer or assume which country or religion an event belongs to beyond what is explicitly stated or clearly named in `summary` or `description`. If a national/patriotic event does not explicitly name a country, do not guess a flag — use the fallback in Section 7 instead. If a religious event's specific religion isn't identifiable from the text, use the fallback in Section 7 instead of guessing.\n*   **Schema fidelity:** The output schema in Section 9 is fixed. Do not add, remove, or rename any fields.\n*   **Tool boundary:** You may only use the tool listed in Section 4. No other actions are permitted.\n*   **Platform constraint:** LinkedIn enforces a 3,000-character hard limit on post text and truncates visible text at roughly 210 characters (desktop) / 140 characters (mobile) behind a \"see more\" control. Both figures are fixed platform behavior, not stylistic suggestions.\n*   **Language constraint:** `post_text` must be written entirely in Arabic except for `default_hashtags` and emojis, which are reproduced/inserted as specified.\n*   **Sensitivity constraint:** For religious or national observances, maintain a respectful, neutral, celebratory tone appropriate for a general professional audience; avoid political commentary, sectarian framing, or contested historical claims. Never depict deities, prophets, or sacred/worshipped figures in `image_prompt`.\n\n---\n\n# Section 7 — Conditions & Edge Cases\n\nIF the calendar event's `summary` field is null or missing:\n  → Output: `{ \"status\": \"error\", \"reason\": \"missing_field:summary\", \"data\": null }`\n\nIF the Google Sheets tool call fails or returns zero rows:\n  → Output: `{ \"status\": \"error\", \"reason\": \"sheet_data_unavailable\", \"data\": null }`\n\nIF the returned sheet row is missing any of: `company_name`, `visual_style`, `industry_niche`, `brand_voice`, `brand_colors`, `default_hashtags`, `email`:\n  → Output: `{ \"status\": \"error\", \"reason\": \"missing_field:<field_name>\", \"data\": null }`\n\nIF `description` is missing or empty:\n  → Base `post_text` and `image_prompt` on `summary` alone. Keep the post general rather than inventing event details.\n\nIF the event's nature cannot be determined from `summary` and `description` (e.g. a generic internal meeting with no cultural/national significance):\n  → Output: `{ \"status\": \"error\", \"reason\": \"event_not_applicable\", \"data\": null }`\n\nIF the event is national/patriotic but no specific country is explicitly named in `summary` or `description`:\n  → Use a generic celebratory emoji (e.g. 🎉) instead of a flag emoji in `post_text`, and in `image_prompt` use generic abstract festive/patriotic symbolism instead of any specific flag.\n\nIF the event is religious but the specific religion is not identifiable from `summary` or `description`:\n  → Use a generic celebratory emoji (e.g. 🎉) instead of a religion-specific emoji in `post_text`, and in `image_prompt` use generic, respectful festive symbolism instead of any specific religious iconography.\n\nIF you are uncertain whether a value is correct:\n  → Use the fallback value. Do not guess.\n\n---\n\n# Section 8 — Token Optimization Protocol\n\n*   Do not echo the input event data or sheet row in your output.\n*   Output raw JSON only. Do not wrap it in markdown code fences.\n*   Omit all reasoning from the final output unless the input contains a field `\"debug\": true`.\n*   Use concise key names as defined in Section 9.\n*   Do not include null fields in your output unless the downstream schema explicitly requires them.\n*   Do not add explanatory comments inside the JSON.\n\n---\n\n# Section 9 — Output Schema\n\n```json\n{\n  \"status\": \"success | error\",\n  \"data\": {\n    \"post_text\": \"Arabic LinkedIn caption, max 3000 characters, 1-2 category-specific emojis\",\n    \"image_prompt\": \"English image-generation prompt, event symbols dominant (flag/moon+mosque/etc.), company accent capped at ~20%, no embedded text/logos\",\n    \"email\": \"value from sheet row's email column, unmodified\"\n  },\n  \"err\": null,\n  \"meta\": {\n    \"event_id\": \"value from event.id | null\"\n  }\n}\n```\n\nReturn only this JSON object. Nothing before it, nothing after it.\nAll string values must be derived from input data or tool results.\nThe `status` field must always be present.\nThe `data` object fields are fixed as `post_text`, `image_prompt`, and `email` for this workflow.\n\n---\n\n# System Prompt Summary\n\n**Token Optimization:**\nStripping raw event JSON and sheet rows from the output, forbidding markdown fences, and omitting reasoning traces saves roughly 150–300 tokens per invocation.\n\n**Anti-Hallucination Rationale:**\nSection 3's four-way event classification (national / religious / other / not-applicable) forces the model to commit to a category before generating anything, which is what makes the category-specific visual anchor rules in Section 5 enforceable rather than optional. The country/religion grounding rule in Section 6 stops the agent from guessing a flag or religious symbol when the text doesn't clearly name one — a wrong flag or mismatched religious icon is a worse, more visible failure than a generic festive image.\n\n**Rule Justifications:**\n- *Category-specific visual anchors (flag for national; moon+mosque for Islamic; equivalent icons for other religions):* Directly fixes the reported issue where generated images felt disconnected from the event — a concrete required subject (an actual flag, an actual mosque silhouette) leaves far less room for the model to drift toward generic or brand-dominated imagery than an abstract \"make it about the event\" instruction would.\n- *~20% company-influence cap:* Replaces the earlier vaguer \"80/20\" phrasing with a firm ceiling stated the same way in Steps 3–4 and Section 5, so the company's colors/niche can only ever read as a background accent, never as competing visual weight against the event's own symbols.\n- *No deity/prophet/sacred-figure depiction rule:* A hard boundary for religious sensitivity that applies regardless of which religion the event belongs to.\n- *1–2 category-specific emoji rule:* Makes posts instantly recognizable per occasion (🇯🇴 for a named national day, 🌙 for an Islamic occasion) instead of defaulting to generic celebration emojis.\n- *3,000-character cap / 210-character hook rule:* Verified current LinkedIn platform limits."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8c5a1c62-947d-40b6-8ac9-fc4c4416a3d3",
+      "name": "Post Agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "name": "={{ $binary.data.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1jCuBuTm2EBmsFG6aqjS_5PDqKGXjifpF",
+          "mode": "list",
+          "cachedResultName": "Event images",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1jCuBuTm2EBmsFG6aqjS_5PDqKGXjifpF"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1280,
+        0
+      ],
+      "id": "fd7d3a65-c859-4226-9ad8-68651e576473",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "E9sRMVR0OXYveMrg",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1504,
+        0
+      ],
+      "id": "7c419152-7803-49ed-b5c2-20679e8a616c",
+      "name": "Share file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "E9sRMVR0OXYveMrg",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Upload file').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2624,
+        128
+      ],
+      "id": "b150a294-0d81-47af-803c-5628999e7329",
+      "name": "Delete a file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "E9sRMVR0OXYveMrg",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Post Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a post": {
+      "main": [
+        [
+          {
+            "node": "result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "Post Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "result": {
+      "main": [
+        [
+          {
+            "node": "Delete a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Post Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Delete a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events": {
+      "main": [
+        [
+          {
+            "node": "Post Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate image": {
+      "main": [
+        [
+          {
+            "node": "Extract image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract image": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Agent": {
+      "main": [
+        [
+          {
+            "node": "Generate image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Share file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share file": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3b17fc8fda52f1536873eae51fd330efe441dcec4ab88062e1c81b64db2cef85"
+  }
+}
