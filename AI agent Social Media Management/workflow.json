@@ -1,0 +1,803 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        144
+      ],
+      "id": "249f7b0f-a833-4789-ba1b-94b7a618e555",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here are today's candidate articles:\n{{ JSON.stringify($input.all().map(item => item.json)) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# Section 1 — Role & Objective\n\nYou are the **AI News Social Publisher Agent**, operating as the single AI Agent Tool node inside an n8n content pipeline. Your task in this pipeline is: given a batch of candidate AI-industry news articles pulled from RSS feeds, select exactly one article that has not been covered recently, produce platform-specific captions for Facebook and Instagram plus an image generation prompt, record the choice in the tracking spreadsheet, and return a single structured JSON object.\n\nSuccess criterion: a `status: \"success\"` output whose `data` object contains a topic not semantically duplicated within the last 7 days, a Facebook caption that is long-form and article-anchored, an Instagram caption that is short and hook/trend-styled, a usable `image_prompt`, and a corresponding row successfully appended to the tracking sheet — OR a `status: \"no_match\"` output if no candidate qualifies.\n\n---\n\n# Section 2 — Input Context\n\nYou will receive, embedded in the user message text, a JSON array of candidate articles under the label \"today's candidate articles.\" Each array item may contain:\n\n- `title` (Required): the article headline.\n- `creator` (Optional): the article author.\n- `link` (Required): the article URL.\n- `contentSnippet` (Required): a short excerpt of the article body.\n- `pubDate` (Required): the article's original publication date.\n\nAdditionally, the message text may optionally contain:\n\n- `current_date` (Optional): today's date, if the workflow has been configured to inject it. If absent, derive an approximate current date from the most recent `pubDate` among the candidate articles, and treat any recency comparison made this way as an approximation.\n- `debug` (Optional): if `true`, include a `reasoning` field in your output as described in Section 8.\n\nDo not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 7.\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\nStep 1: Read and validate input fields against the schema in Section 2.\nStep 2: Invoke the \"Get row(s) in sheet in Google Sheets\" tool to retrieve all existing tracking rows (`article_url`, `published_date`, `ai_topic`, `facebook_copy`, `instagram_copy`).\nStep 3: Rank the candidate articles by newsworthiness/significance to an AI-industry audience, most significant first.\nStep 4: Evaluate candidates in ranked order. For each candidate:\n  a. Assign it a concise `ai_topic` label describing its underlying subject (the specific product, company announcement, or event — not a broad category like \"AI models\").\n  b. Reject the candidate immediately, without further checks, if its `link` exactly matches an existing `article_url` in the retrieved rows.\n  c. Otherwise, check whether any existing row has a semantically matching `ai_topic` (same underlying story, not just the same general subject area). If a match exists, compute the day difference between that row's `published_date` and the current date (per Section 2). If the difference is less than 7 days, reject this candidate and move to the next-ranked one. If 7 or more days, or no matching topic exists, accept this candidate and stop evaluating further candidates.\nStep 5: If no candidate is accepted after evaluating the full ranked list, skip to the no-match output defined in Section 7.\nStep 6: For the accepted candidate, draft:\n  - `image_prompt`: a visual description suitable for an image generation model, unrelated in wording to the caption text.\n  - `facebook_caption`: 2–4 sentences, article-focused, summarizing the story's substance and significance, ending with the source link.\n  - `instagram_caption`: 1–2 short lines plus a hashtag block, hook/trend-styled, no bare URL — refer readers to \"link in bio\" instead.\nStep 7: Invoke the \"Append row in sheet in Google Sheets\" tool with `article_url` (the accepted candidate's `link`), `published_date` (the accepted candidate's `pubDate`), `ai_topic`, `facebook_copy` (= `facebook_caption`), and `instagram_copy` (= `instagram_caption`).\nStep 8: Verify your output matches the schema in Section 9 before returning it.\nStep 9: If any step fails, execute the fallback defined in Section 7.\n\n**Self-Check:** Before producing your final output, perform a self-check: Does every value in your output come directly from the input data or a tool result? If any value was inferred or assumed without a traceable source, replace it with the fallback value.\n\n---\n\n# Section 4 — Tools & Capabilities\n\n**Tool Name:** Get row(s) in sheet in Google Sheets\n- Purpose: Retrieve all existing rows from the post-tracking sheet.\n- When to invoke it: Once, at the start of evaluation, before selecting a topic (Step 2).\n- Expected input: None (no filter parameters are configured on this tool).\n- Expected output: A list of rows, each with `article_url`, `published_date`, `ai_topic`, `facebook_copy`, `instagram_copy`.\n- On failure: Log the tool name and error code. Do not retry. Return the error schema immediately — do not proceed to topic selection without duplicate-check data.\n\n**Tool Name:** Append row in sheet in Google Sheets\n- Purpose: Record the selected article and generated captions in the tracking sheet.\n- When to invoke it: Once, after content has been drafted for the accepted candidate (Step 7), before returning final output.\n- Expected input: `article_url`, `published_date`, `ai_topic`, `facebook_copy`, `instagram_copy` — all as strings.\n- Expected output: Confirmation of the appended row.\n- On failure: Log the tool name and error code. Do not retry. Return the error schema immediately.\n\nNever invoke a tool not listed here. Never assume a tool's behavior beyond what is described in this section.\n\n---\n\n# Section 5 — Rules & Instructions\n\n- Do not add conversational filler, preambles, or explanations to your output.\n- Do not echo the input data in your output.\n- Do not fabricate data. If a value is unavailable, use the defined fallback.\n- Execute deterministically: given the same input and tool results, always produce the same output.\n- Do not make assumptions about fields, APIs, or behaviors not described in this prompt.\n- Never modify the output schema to add extra fields, even if they seem helpful.\n- Never select or output an article whose `link` exactly matches an existing `article_url` in the tracking sheet.\n- Never select a topic that semantically matches a sheet row's `ai_topic` if that row's `published_date` is less than 7 days before the current date.\n- Always keep `facebook_caption` article-focused and longer-form; always keep `instagram_caption` short, hook-styled, and free of bare URLs.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n- **Knowledge boundary:** Your knowledge is limited to what is described in this prompt, the input data, and tool results. Do not use external knowledge to fill gaps.\n- **No assumption rule:** If a required piece of information is missing from the input, do not guess. Use the fallback behavior.\n- **Schema fidelity:** The output schema in Section 9 is fixed. Do not add, remove, or rename any fields.\n- **Tool boundary:** You may only use tools listed in Section 4. No other actions are permitted.\n- **Date approximation constraint:** If `current_date` is not present in the input, any recency comparison performed using an approximated date (derived from candidate `pubDate` values) is inherently imprecise and must still be used — do not skip the duplicate check for this reason.\n- **Single-article constraint:** You must select at most one article per run. Never output multiple candidates.\n- **Source scope:** Candidate articles originate only from AI-industry RSS sources (VentureBeat, TechCrunch, Ars Technica, The Verge). Do not evaluate suitability against any other topical domain.\n\n---\n\n# Section 7 — Conditions & Edge Cases\n\nIF a required input field (a candidate's `link`, `contentSnippet`, or `pubDate`) is null or missing:\n  → Exclude that candidate from evaluation; do not reject the entire batch.\n\nIF the entire candidate array is empty or missing:\n  → Output: { \"status\": \"error\", \"reason\": \"missing_field:candidate_articles\", \"data\": null }\n\nIF no candidate survives duplicate-filtering (Section 3, Step 5):\n  → Output: { \"status\": \"no_match\", \"reason\": \"all_candidates_duplicate_or_unsuitable\", \"data\": null }\n\nIF a tool call returns an error:\n  → Log the tool name and error code. Do not retry. Return the error schema immediately.\n\nIF the input data does not match the expected schema:\n  → Do not attempt to process it. Return the error schema immediately.\n\nIF you are uncertain whether a value is correct:\n  → Use the fallback value. Do not guess.\n\n---\n\n# Section 8 — Token Optimization Protocol\n\n- Do not echo the input data in your output.\n- Output raw JSON only. Do not wrap it in markdown code fences.\n- Omit all reasoning from the final output unless the input contains a field `\"debug\": true`.\n- Use concise key names as defined in Section 9.\n- Do not include null fields in your output unless the downstream schema explicitly requires them.\n- Do not add explanatory comments inside the JSON.\n\n---\n\n# Section 9 — Output Schema\n\n{\n  \"status\": \"success | no_match | error\",\n  \"data\": {\n    \"source_title\": \"string\",\n    \"source_link\": \"string\",\n    \"ai_topic\": \"string\",\n    \"image_prompt\": \"string\",\n    \"facebook_caption\": \"string\",\n    \"instagram_caption\": \"string\"\n  },\n  \"err\": null,\n  \"meta\": {\n    \"tool_used\": \"Append row in sheet in Google Sheets | null\"\n  }\n}\n\n- Return only this JSON object. Nothing before it, nothing after it.\n- All string values must be derived from input data or tool results.\n- The `status` field must always be present.\n- The `data` object is `null` when `status` is `\"no_match\"` or `\"error\"`."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        976,
+        128
+      ],
+      "id": "437275c7-a482-4232-9987-39ac9ac88141",
+      "name": "AI Agent",
+      "executeOnce": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "list",
+          "cachedResultName": "n8n-gemini-app"
+        },
+        "modelName": "gemini-3.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        912,
+        416
+      ],
+      "id": "b21afc5a-b9f0-4fb4-b683-875da0f96ec3",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "UF3njFHn5PkiRYTm",
+          "name": "Google Service Account account 7"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "=image",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1728,
+        128
+      ],
+      "id": "68ef378b-8898-4d20-bd55-239dfe5a2aca",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash-image:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \" {{ $json.output.data.image_prompt }} \"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1280,
+        128
+      ],
+      "id": "03cbf653-e0d6-49c2-9ab9-ad2b931300f1",
+      "name": "Generate image",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "DSCCILiwF1RJ9aed",
+          "name": "Query Auth account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b097b2d3-85fb-49c2-99b9-ec3960c15c69",
+              "name": "image",
+              "value": "={{ $json.candidates[0].content.parts[0].inlineData.data}} ||{{ $json.candidates[0].content.parts[1].inlineData.data}} ",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        128
+      ],
+      "id": "15c45622-27fa-4880-81f5-491159bd9a49",
+      "name": "Extract image"
+    },
+    {
+      "parameters": {
+        "user": "__manual_user__",
+        "userManual": "main",
+        "platform": [
+          "facebook"
+        ],
+        "title": "={{ $('AI Agent').item.json.output.data.source_title }}\n\n{{ $('AI Agent').item.json.output.data.facebook_caption }}",
+        "firstComment": "=resours {{ $('AI Agent').item.json.output.data.source_link }}",
+        "altText": "={{ $('AI Agent').item.json.output.data.ai_topic }}",
+        "facebookTitle": "=",
+        "description": "=",
+        "facebookDescription": "=",
+        "facebookFirstComment": "=",
+        "photos": "data",
+        "timezone": "Jordan/Amman",
+        "facebookPageId": "1232254806641325"
+      },
+      "type": "n8n-nodes-upload-post.uploadPost",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        -16
+      ],
+      "id": "93fb22d4-1f05-4962-8613-26780510b1b4",
+      "name": "Facebook post",
+      "credentials": {
+        "uploadPostApi": {
+          "id": "HZIR7YBN2B5OAOkW",
+          "name": "Upload Post account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "zaidradaideh.dev@gmail.com",
+        "subject": "Failed to to post on Facebook",
+        "message": "<div style=\"font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ffcccc; background-color: #fff9f9; border-radius: 8px;\">   <h3 style=\"color: #d9534f; margin-top: 0;\">⚠️ Facebook Post Failed</h3>   <p style=\"color: #333; font-size: 16px;\">The automated post to Facebook has failed to publish.</p>   <p style=\"color: #333; font-size: 16px;\">Please log in and check your workflow execution logs to review the error.</p> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2352,
+        -48
+      ],
+      "id": "107cbc99-0f7a-45ee-a9f3-fd467a4e8fab",
+      "name": "Facebook error",
+      "webhookId": "799d5508-895e-4fa9-962d-67d1985991a9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EcVJ3jqmfLxDGVqT",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "zaidradaideh.dev@gmail.com",
+        "subject": "Instagram Post Failed",
+        "message": "<div style=\"font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ffcccc; background-color: #fff9f9; border-radius: 8px;\">   <h3 style=\"color: #d9534f; margin-top: 0;\">⚠️ Instagram Post Failed</h3>   <p style=\"color: #333; font-size: 16px;\">The automated post to Instagram has failed to publish.</p>   <p style=\"color: #333; font-size: 16px;\">Please log in and check your workflow execution logs to review the error.</p> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2336,
+        336
+      ],
+      "id": "6d79b0ac-7e80-4993-94df-7ca061aeb4cf",
+      "name": "Instagram error",
+      "webhookId": "799d5508-895e-4fa9-962d-67d1985991a9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EcVJ3jqmfLxDGVqT",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "zaidradaideh.dev@gmail.com",
+        "subject": "Posts Published Successfully",
+        "message": "=<div style=\"font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d6e9c6; background-color: #f4fdf4; border-radius: 8px;\">   <h3 style=\"color: #3c763d; margin-top: 0;\">✅ Posts Published Successfully</h3>   <p style=\"color: #333; font-size: 16px;\">The automated content has been successfully posted.</p>   <ul style=\"color: #333; font-size: 16px; padding-left: 20px;\">     <li><strong>Facebook:</strong> <a href=\"{{$('Facebook post').item.json.results[0].post_url }}\" style=\"color: #337ab7;\">View Post</a></li>     <li><strong>Instagram:</strong> <a href=\"{{$('Instagram post').item.json.results[0].post_url}}\" style=\"color: #337ab7;\">View Post</a></li>   </ul> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2544,
+        128
+      ],
+      "id": "85026fe7-8ec5-44bd-adfd-fd00253d48a3",
+      "name": "Send success message",
+      "webhookId": "799d5508-895e-4fa9-962d-67d1985991a9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EcVJ3jqmfLxDGVqT",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://venturebeat.com/category/ai/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "18efe04e-3434-4ee6-b527-7496b6a969c1",
+      "name": "venturebeat"
+    },
+    {
+      "parameters": {
+        "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        48
+      ],
+      "id": "66ea8af0-febb-418e-a8a3-eb49cc8d99aa",
+      "name": "techcrunch"
+    },
+    {
+      "parameters": {
+        "url": "https://arstechnica.com/ai/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        240
+      ],
+      "id": "340ae33b-a8cc-4311-86c9-ab62b501c4be",
+      "name": "arstechnica"
+    },
+    {
+      "parameters": {
+        "url": "https://www.theverge.com/rss/index.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        432
+      ],
+      "id": "23ca57c2-3c5c-4a92-810c-ebbfcc276de3",
+      "name": "theverge"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    title: item.json.title,\n    creator: item.json.creator,\n    link: item.json.link,\n    contentSnippet: item.json.contentSnippet,\n    pubDate: item.json.pubDate\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        144
+      ],
+      "id": "d9588a51-b80b-450f-955f-b0d8a0f65d77",
+      "name": "cleaning"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        112
+      ],
+      "id": "06fcf184-c080-427e-9735-be6f5fa3112a",
+      "name": "aggregate result"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "output": "empty"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2336,
+        128
+      ],
+      "id": "86f022e3-9c22-40d4-a992-b8deaf8c91f7",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"status\": \"success | no_match | error\",\n  \"data\": {\n    \"source_title\": \"string\",\n    \"source_link\": \"string\",\n    \"ai_topic\": \"string\",\n    \"image_prompt\": \"string\",\n    \"facebook_caption\": \"string\",\n    \"instagram_caption\": \"string\"\n  },\n  \"err\": null,\n  \"meta\": {\n    \"tool_used\": \"Append row in sheet in Google Sheets | null\"\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        432
+      ],
+      "id": "1cc5513d-9c6c-451e-85e3-ee9ee105165f",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Ue-ifw064ECZthdLUiLnY-lR8u9CHcGPLETXLLK8_SM",
+          "mode": "list",
+          "cachedResultName": "Auto posting",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ue-ifw064ECZthdLUiLnY-lR8u9CHcGPLETXLLK8_SM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ue-ifw064ECZthdLUiLnY-lR8u9CHcGPLETXLLK8_SM/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1184,
+        432
+      ],
+      "id": "32d96cab-01a0-4341-a913-eac9f3d95c21",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "j071sxoTH7hcH8Z7",
+          "name": "Google Service Account account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Ue-ifw064ECZthdLUiLnY-lR8u9CHcGPLETXLLK8_SM",
+          "mode": "list",
+          "cachedResultName": "Auto posting",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ue-ifw064ECZthdLUiLnY-lR8u9CHcGPLETXLLK8_SM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ue-ifw064ECZthdLUiLnY-lR8u9CHcGPLETXLLK8_SM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "article_url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('article_url', ``, 'string') }}",
+            "published_date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('published_date', ``, 'string') }}",
+            "ai_topic": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ai_topic', ``, 'string') }}",
+            "facebook_copy": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('facebook_copy', ``, 'string') }}",
+            "instagram_copy": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('instagram_copy', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "article_url",
+              "displayName": "article_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "published_date",
+              "displayName": "published_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ai_topic",
+              "displayName": "ai_topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "facebook_copy",
+              "displayName": "facebook_copy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "instagram_copy",
+              "displayName": "instagram_copy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        448
+      ],
+      "id": "1c65fb69-0553-49ed-8382-d79cb7c41f01",
+      "name": "Append row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "j071sxoTH7hcH8Z7",
+          "name": "Google Service Account account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "user": "__manual_user__",
+        "userManual": "main",
+        "platform": [
+          "instagram"
+        ],
+        "title": "={{ $('AI Agent').item.json.output.data.source_title }}\n\n{{ $('AI Agent').item.json.output.data.instagram_caption }}",
+        "firstComment": "=resours {{ $('AI Agent').item.json.output.data.source_link }}",
+        "altText": "={{ $('AI Agent').item.json.output.data.ai_topic }}",
+        "photos": "data",
+        "timezone": "Jordan/Amman"
+      },
+      "type": "n8n-nodes-upload-post.uploadPost",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        240
+      ],
+      "id": "be1b0e9a-2b95-4e8f-87ef-951ce3cb53eb",
+      "name": "Instagram post",
+      "credentials": {
+        "uploadPostApi": {
+          "id": "HZIR7YBN2B5OAOkW",
+          "name": "Upload Post account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "# AI News Auto-Publisher Pipeline\n\n## Purpose\nAutomatically scrapes AI news, selects a unique daily story, generates a contextual image, and publishes tailored posts to both Facebook and Instagram.\n\n## Workflow Flow\n1. **Data Collection:** Pulls RSS feeds from VentureBeat, TechCrunch, Ars Technica, and The Verge.\n2. **AI Agent (Gemini):** Evaluates all articles, cross-references a Google Sheet to prevent posting the same topic within 7 days, and writes custom captions plus an image generation prompt.\n3. **Asset Creation:** Calls Vertex AI via HTTP to generate a unique image based on the agent's prompt.\n4. **Parallel Publishing:** Uploads the final image and specific captions to Facebook and Instagram simultaneously.\n5. **Notifications:** The Merge node waits for both platforms to finish, then sends a single success email containing both live post URLs (or sends error alerts if a step fails).\n\n## Maintenance Notes\n* **Google Sheet Memory:** Do not delete the tracking sheet or alter its column names. The AI Agent relies on this sheet to \"remember\" past posts and avoid duplicates.\n* **Scheduling:** Adjust the Schedule Trigger at the start of the workflow to control how often content is published. \n* **Node Expressions:** The Success Email uses `.first()` expressions to bypass the Merge node's branch discarding. If you change the names of the Facebook or Instagram nodes, you must update the email's HTML code to match.",
+        "height": 640,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -32,
+        -896
+      ],
+      "typeVersion": 1,
+      "id": "d09b51c9-60e9-4fcf-8c9e-c220db3c3074",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Data Collection",
+        "height": 816,
+        "width": 864,
+        "color": "#3498DB"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "c9ee4a8a-b3b2-4b36-b8de-fa88ae39d434",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "AI Generation",
+        "height": 816,
+        "width": 992,
+        "color": "#9B59B6"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "7f3388a3-c742-4770-8754-2599c9734c2c",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Publishing & Alerts",
+        "height": 816,
+        "width": 992,
+        "color": "#E67E22"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "026fa19d-8047-42f1-b7b0-e00658c1652b",
+      "name": "Sticky Note3"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "techcrunch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "arstechnica",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "theverge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "venturebeat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Generate image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Facebook post",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Instagram post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate image": {
+      "main": [
+        [
+          {
+            "node": "Extract image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract image": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook post": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Facebook error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "venturebeat": {
+      "main": [
+        [
+          {
+            "node": "aggregate result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "techcrunch": {
+      "main": [
+        [
+          {
+            "node": "aggregate result",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "arstechnica": {
+      "main": [
+        [
+          {
+            "node": "aggregate result",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "theverge": {
+      "main": [
+        [
+          {
+            "node": "aggregate result",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "cleaning": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate result": {
+      "main": [
+        [
+          {
+            "node": "cleaning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send success message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram post": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Instagram error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3b17fc8fda52f1536873eae51fd330efe441dcec4ab88062e1c81b64db2cef85"
+  }
+}
