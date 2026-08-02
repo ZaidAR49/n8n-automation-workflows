@@ -2,32 +2,6 @@
   "nodes": [
     {
       "parameters": {
-        "projectId": {
-          "__rl": true,
-          "value": "n8n-gemini-app-500118",
-          "mode": "list",
-          "cachedResultName": "n8n-gemini-app"
-        },
-        "modelName": "gemini-3.5-flash",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
-      "typeVersion": 1,
-      "position": [
-        144,
-        224
-      ],
-      "id": "61ab1b94-cd05-42cc-8fa2-964f46ab89dc",
-      "name": "Google Vertex Chat Model",
-      "credentials": {
-        "googleApi": {
-          "id": "UF3njFHn5PkiRYTm",
-          "name": "Google Service Account account 7"
-        }
-      }
-    },
-    {
-      "parameters": {
         "postAs": "organization",
         "organization": "138344006",
         "text": "={{ $('Post Agent').item.json.output.data.post_text }}",
@@ -38,14 +12,14 @@
       "type": "n8n-nodes-base.linkedIn",
       "typeVersion": 1,
       "position": [
-        2176,
-        48
+        2224,
+        624
       ],
-      "id": "e7a04612-222e-429b-94d3-a004fdb6da9a",
+      "id": "642d82e2-ef81-408e-b77c-7a85a602e6cc",
       "name": "Create a post",
       "credentials": {
         "linkedInOAuth2Api": {
-          "id": "ra6xOb5NN344fRGp",
+          "id": "pUT5dEWzBpNWgcKa",
           "name": "LinkedIn account"
         }
       }
@@ -71,15 +45,15 @@
       "type": "n8n-nodes-base.googleSheetsTool",
       "typeVersion": 4.7,
       "position": [
-        272,
-        224
+        320,
+        848
       ],
-      "id": "24a9a5ef-e8b1-4836-be04-a17cbfe938cb",
+      "id": "0a4398da-ac30-40f0-8f72-53f1668c3e21",
       "name": "Get row(s) in sheet in Google Sheets",
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "j071sxoTH7hcH8Z7",
-          "name": "Google Service Account account 6"
+          "id": "OkMY70iXdeXbVKa8",
+          "name": "Google Sheets account"
         }
       }
     },
@@ -93,15 +67,15 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        2400,
-        48
+        2448,
+        624
       ],
-      "id": "80b871f4-dbee-4cd0-b043-50e745b3eeca",
+      "id": "87082d5e-7199-4b08-9ce5-e4f79816e4c3",
       "name": "result",
       "webhookId": "b065f01f-6e34-49b9-9b12-680881560c30",
       "credentials": {
         "gmailOAuth2": {
-          "id": "EcVJ3jqmfLxDGVqT",
+          "id": "TJcDSJQYiF15lUy6",
           "name": "Gmail account"
         }
       }
@@ -115,10 +89,10 @@
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1,
       "position": [
-        1056,
-        0
+        1104,
+        624
       ],
-      "id": "44a39c06-fc36-4642-8735-3ed5fc957265",
+      "id": "c8de8f24-3681-4195-9d4e-88d56ad56ca3",
       "name": "Convert to File"
     },
     {
@@ -128,10 +102,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        400,
-        224
+        448,
+        848
       ],
-      "id": "7c1f7534-7413-4d31-808e-6a163e8771d9",
+      "id": "67d791c1-83aa-41f8-8c52-7367ba22f34a",
       "name": "Structured Output Parser"
     },
     {
@@ -219,41 +193,11 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        1952,
-        112
+        2000,
+        736
       ],
-      "id": "78f81ac6-89a3-4a6f-86cf-ecf425b702bd",
+      "id": "0074d562-1121-4b0c-991c-f4d3b2bcf4fe",
       "name": "Switch"
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "calendar": {
-          "__rl": true,
-          "value": "395a8a2615451dbbb18be5d522214ba70bffdc463ff43279adeef1ba8f22b662@group.calendar.google.com",
-          "mode": "list",
-          "cachedResultName": "test workflow "
-        },
-        "limit": 1,
-        "timeMin": "={{ $json.timestamp }}",
-        "options": {
-          "orderBy": "startTime"
-        }
-      },
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
-      "position": [
-        -80,
-        128
-      ],
-      "id": "2fedd4d9-dd3c-432b-9031-3c8cf3b4e367",
-      "name": "Get many events",
-      "credentials": {
-        "googleCalendarOAuth2Api": {
-          "id": "rrsCHxdKFzD7AyhL",
-          "name": "Google Calendar account"
-        }
-      }
     },
     {
       "parameters": {
@@ -266,10 +210,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        -304,
-        128
+        -256,
+        752
       ],
-      "id": "6c898762-5df7-4ef4-ab27-8fec519876a5",
+      "id": "27c09a3e-1f56-4526-8f4b-f5f77c5afa1c",
       "name": "Schedule Trigger"
     },
     {
@@ -286,17 +230,17 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        608,
-        0
+        656,
+        624
       ],
-      "id": "c0b7599b-62af-45bf-b289-3f55072e4cda",
+      "id": "47468c33-ca56-4f6f-a8de-245ce2e55eac",
       "name": "Generate image",
       "retryOnFail": true,
       "waitBetweenTries": 5000,
       "credentials": {
         "httpQueryAuth": {
-          "id": "DSCCILiwF1RJ9aed",
-          "name": "Query Auth account 3"
+          "id": "YnnnhBwZxrE8dGxk",
+          "name": "Query Auth account"
         }
       }
     },
@@ -317,10 +261,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        832,
-        0
+        880,
+        624
       ],
-      "id": "025b9b16-20a3-43a4-af78-8a7476257302",
+      "id": "b5f0ef1c-0414-45c2-8a74-e45282e92f0d",
       "name": "Extract image"
     },
     {
@@ -331,11 +275,11 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "position": [
-        -224,
-        -544
+        -176,
+        80
       ],
       "typeVersion": 1,
-      "id": "56c0c9de-e5e7-4e79-97d8-6a9d5bd94bff",
+      "id": "6d5236ff-5fea-48df-a8c9-6134e6d9df22",
       "name": "Sticky Note"
     },
     {
@@ -371,15 +315,15 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1728,
-        0
+        1776,
+        624
       ],
-      "id": "c12041ef-b89c-4547-bbf1-32de0c842d5c",
+      "id": "440fda1b-b0c8-468b-b6d6-e62f2a18211d",
       "name": "Send message and wait for response1",
       "webhookId": "3eee22d1-7e3e-4f14-bd5b-ab3953583fa3",
       "credentials": {
         "gmailOAuth2": {
-          "id": "EcVJ3jqmfLxDGVqT",
+          "id": "TJcDSJQYiF15lUy6",
           "name": "Gmail account"
         }
       }
@@ -396,10 +340,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        208,
-        0
+        256,
+        624
       ],
-      "id": "8c5a1c62-947d-40b6-8ac9-fc4c4416a3d3",
+      "id": "7225726d-a46d-46b5-aa4e-6a056c879f26",
       "name": "Post Agent",
       "retryOnFail": true
     },
@@ -425,14 +369,14 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        1280,
-        0
+        1328,
+        624
       ],
-      "id": "fd7d3a65-c859-4226-9ad8-68651e576473",
+      "id": "4a66eb7a-3c5b-42c3-a78d-394e899e00c9",
       "name": "Upload file",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "E9sRMVR0OXYveMrg",
+          "id": "e5xzWLqavk5vGQXo",
           "name": "Google Drive account"
         }
       }
@@ -456,14 +400,66 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        1504,
-        0
+        1552,
+        624
       ],
-      "id": "7c419152-7803-49ed-b5c2-20679e8a616c",
+      "id": "dd51a609-b569-4bba-96a2-6339f30a3293",
       "name": "Share file",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "E9sRMVR0OXYveMrg",
+          "id": "e5xzWLqavk5vGQXo",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "list",
+          "cachedResultName": "n8n-gemini-app",
+          "cachedResultUrl": ""
+        },
+        "modelName": "gemini-3.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        112,
+        832
+      ],
+      "id": "9b5a3504-77e6-4d9d-9021-4090ef33e666",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "taJiZniL8M15zSeH",
+          "name": "Google Service Account account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Upload file').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2368,
+        912
+      ],
+      "id": "ef1f40f3-8409-4ad3-a558-4ef1b2994244",
+      "name": "Delete pervious image",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "e5xzWLqavk5vGQXo",
           "name": "Google Drive account"
         }
       }
@@ -481,31 +477,51 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        2624,
-        128
+        2688,
+        832
       ],
-      "id": "b150a294-0d81-47af-803c-5628999e7329",
-      "name": "Delete a file",
+      "id": "f2e28362-73f1-44cb-b8e6-fa0720a82093",
+      "name": "clean up",
       "credentials": {
         "googleDriveOAuth2Api": {
-          "id": "E9sRMVR0OXYveMrg",
+          "id": "e5xzWLqavk5vGQXo",
           "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "395a8a2615451dbbb18be5d522214ba70bffdc463ff43279adeef1ba8f22b662@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "test workflow ",
+          "cachedResultUrl": ""
+        },
+        "limit": 1,
+        "timeMin": "={{ $json.timestamp }}",
+        "options": {
+          "orderBy": "startTime"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        752
+      ],
+      "id": "a1cfdc29-a2d6-48de-a834-a3dbf9bee9ea",
+      "name": "Get latest event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "I2kurrB6d2RX24Wh",
+          "name": "Google Calendar account 3"
         }
       }
     }
   ],
   "connections": {
-    "Google Vertex Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Post Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Create a post": {
       "main": [
         [
@@ -532,7 +548,7 @@
       "main": [
         [
           {
-            "node": "Delete a file",
+            "node": "clean up",
             "type": "main",
             "index": 0
           }
@@ -572,25 +588,14 @@
         ],
         [
           {
-            "node": "Get many events",
+            "node": "Delete pervious image",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Delete a file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get many events": {
-      "main": [
-        [
-          {
-            "node": "Post Agent",
+            "node": "clean up",
             "type": "main",
             "index": 0
           }
@@ -601,7 +606,7 @@
       "main": [
         [
           {
-            "node": "Get many events",
+            "node": "Get latest event",
             "type": "main",
             "index": 0
           }
@@ -673,11 +678,44 @@
           }
         ]
       ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Post Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete pervious image": {
+      "main": [
+        [
+          {
+            "node": "Get latest event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get latest event": {
+      "main": [
+        [
+          {
+            "node": "Post Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "3b17fc8fda52f1536873eae51fd330efe441dcec4ab88062e1c81b64db2cef85"
+    "instanceId": "35bd7a4c88065a494e34786b7a0228cb82e951b0b38ac5fcc26fc4ad78f730ff"
   }
 }
