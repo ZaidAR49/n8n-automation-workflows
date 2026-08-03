@@ -1,0 +1,399 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        160
+      ],
+      "id": "75e24bd1-4c7e-46fa-9eac-1472f97ceaba",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://www.gamerpower.com/api/giveaways",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "game"
+            },
+            {
+              "name": "platform",
+              "value": "pc"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        240,
+        160
+      ],
+      "id": "fe6ae37e-2f08-4441-9293-1d4022dd9faf",
+      "name": "Get games"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().filter(item => {\n  // Keep only items with an end_date (temporary promotions)\n  if (item.json.end_date === \"N/A\") return false;\n\n  // Extract the numeric value from the worth string (e.g., \"$19.99\" -> 19.99)\n  const worthString = item.json.worth || \"$0\";\n  const worthValue = parseFloat(worthString.replace(/[^0-9.]/g, ''));\n\n  // Keep only items worth more than $10\n  return worthValue > 10;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        160
+      ],
+      "id": "2e585c3e-f2c0-42bd-b296-8b56fc597df0",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FkJ65gsbvK2Q3anU0Qg72K02vRE3pzJmC0BYDhVhKRQ",
+          "mode": "list",
+          "cachedResultName": "games",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FkJ65gsbvK2Q3anU0Qg72K02vRE3pzJmC0BYDhVhKRQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FkJ65gsbvK2Q3anU0Qg72K02vRE3pzJmC0BYDhVhKRQ/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        688,
+        160
+      ],
+      "id": "37107419-8d49-4ef1-a16d-3d267e332db0",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OkMY70iXdeXbVKa8",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        240
+      ],
+      "id": "05cfc86a-a99f-478a-ad40-f0ec630bf51b",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sheetData = $('Get row(s) in sheet').all();\nconst apiGames = $('Filter').all();\n\n// 1. Build a set of existing IDs from Google Sheet column \"ID\"\nconst existingIds = new Set(\n  sheetData.map(row => String(row.json.ID || '').trim())\n);\n\n// 2. Return ONLY games whose API `id` is NOT in the sheet\nreturn apiGames.filter(item => {\n  const gameId = String(item.json.id || '').trim();\n  return gameId !== '' && !existingIds.has(gameId);\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        160
+      ],
+      "id": "5273e483-4b9b-47da-908a-5f9643a4e635",
+      "name": "Get new games",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "caa1852b-f14a-4450-930c-53ecf390f95e",
+              "leftValue": "={{$json}}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1136,
+        160
+      ],
+      "id": "fcd537d7-2981-49b9-a4c6-0d29e0fd7cc6",
+      "name": "new games?"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1FkJ65gsbvK2Q3anU0Qg72K02vRE3pzJmC0BYDhVhKRQ",
+          "mode": "list",
+          "cachedResultName": "games",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FkJ65gsbvK2Q3anU0Qg72K02vRE3pzJmC0BYDhVhKRQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FkJ65gsbvK2Q3anU0Qg72K02vRE3pzJmC0BYDhVhKRQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Get new games').item.json.id }}",
+            "Title": "={{ $('Get new games').item.json.title }}",
+            "URL": "={{ $('Get new games').item.json.gamerpower_url }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1584,
+        80
+      ],
+      "id": "ddca913a-edd8-4db1-b3c9-0edaab19c28e",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OkMY70iXdeXbVKa8",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1531264583166333078",
+          "mode": "id"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1533930793699770500",
+          "mode": "list",
+          "cachedResultName": "free-games",
+          "cachedResultUrl": "https://discord.com/channels/1531264583166333078/1533930793699770500"
+        },
+        "options": {},
+        "embeds": {
+          "values": [
+            {
+              "description": "={{ $('Get new games').item.json.description }}\n\n\n**💰 Value:** {{$('Get new games').item.json.worth }}\n**💻 Platform:** {{ $('Get new games').item.json.platforms }}\n**⏳ Expires:** {{ $('Get new games').item.json.end_date.toDateTime().format('yyyy-MM-dd') }}\n\nClaimed by {{ $('Get new games').item.json.users }} gamers",
+              "author": "Zaid Radaideh",
+              "color": "#FF0000",
+              "title": "={{ $('Get new games').item.json.title }}",
+              "url": "={{ $('Get new games').item.json.open_giveaway }}",
+              "image": "={{ $('Get new games').item.json.image }}",
+              "thumbnail": "={{ $('Get new games').item.json.thumbnail }}",
+              "video": "="
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        80
+      ],
+      "id": "33d3cdc7-b968-46e6-94a2-b3855ef2db41",
+      "name": "Send a message",
+      "webhookId": "5d20dcd2-aa4f-4f8e-b6e5-2cef719d955f",
+      "credentials": {
+        "discordOAuth2Api": {
+          "id": "jeL0cUJ3sREagfZA",
+          "name": "Discord account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### 🎮 Free PC Game Alert Bot\n\n**Features:**\n* **Automated Fetching:** Runs on a schedule to pull active PC game giveaways via the GamerPower API.\n* **Value Filtering:** Custom JavaScript logic keeps only temporary promotions worth over $10.\n* **Deduplication:** Cross-references game IDs with a Google Sheet to guarantee zero duplicate posts.\n* **Rich Discord Notifications:** Formats and sends visually clean embeds featuring the game art, original price, platform, and expiration date.\n* **Data Logging:** Automatically appends successfully posted games to the Google Sheet tracker.",
+        "height": 320,
+        "width": 672
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "b1724c58-6cc6-4da4-aa37-b9fadbcd07f9",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get games",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get games": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get new games",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get new games": {
+      "main": [
+        [
+          {
+            "node": "new games?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "new games?": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "35bd7a4c88065a494e34786b7a0228cb82e951b0b38ac5fcc26fc4ad78f730ff"
+  }
+}
