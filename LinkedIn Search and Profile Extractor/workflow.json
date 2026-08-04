@@ -1,0 +1,443 @@
+{
+  "name": "LinkedIn Search & Profile Extractor",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        256,
+        64
+      ],
+      "id": "acf1f4bb-34e1-4b0a-b373-72bad726a775",
+      "name": "Telegram Trigger",
+      "webhookId": "bea49639-9485-45a1-a1a7-b290fa6b320d",
+      "credentials": {
+        "telegramApi": {
+          "id": "ukGJjo1Ae5kCi4Ra",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $('Telegram Trigger').first().json.message?.text || $input.first().json.text || '';\n\nconst nameMatch = text.match(/Name:\\s*(.+)/i);\nconst notesMatch = text.match(/Notes:\\s*([\\s\\S]+)/i);\n\nif (nameMatch && notesMatch) {\n  const rawName = nameMatch[1].trim();\n  const nameParts = rawName.split(/\\s+/);\n  \n  const firstName = nameParts[0] || '';\n  const lastName = nameParts.slice(1).join(' ') || '';\n\n  return {\n    status: true,\n    firstName: firstName,\n    lastName: lastName,\n    searchNotes: notesMatch[1].trim()\n  };\n} else {\n  return {\n    status: false,\n    firstName: null,\n    lastName: null,\n    searchNotes: null\n  };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        64
+      ],
+      "id": "d2d4ab2d-285a-4976-a86c-4fe9ba4ea0b7",
+      "name": "Extract Name & Notes"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d1c52d49-dd4a-4a89-934e-1eaa08236d79",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        704,
+        64
+      ],
+      "id": "a2a798bb-1a92-4185-b5a5-c84792f7ece6",
+      "name": "Is Valid Format?"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "value": "pIyH7237rHZBxoO7q",
+          "mode": "list",
+          "cachedResultName": "Profile Search Scraper for LinkedIn + EMAIL (No Cookies) (apimaestro/linkedin-profile-search-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/pIyH7237rHZBxoO7q/input"
+        },
+        "customBody": "={\n    \"firstname\": \"{{ $json.firstName }}\",\n    \"lastname\": \"{{ $json.lastName }}\",\n    \"include_email\": false,\n    \"max_profiles\": 10\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        928,
+        -32
+      ],
+      "id": "2ee5f6dd-02b7-47cc-b40b-61e881ae0523",
+      "name": "Apify: Search Profiles",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "apifyApi": {
+          "id": "YytRFWh0vMfXf0fY",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "value": "LpVuK3Zozwuipa5bp",
+          "mode": "list",
+          "cachedResultName": "LinkedIn Profile Scraper + Email ✅ No Cookies (harvestapi/linkedin-profile-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/LpVuK3Zozwuipa5bp/input"
+        },
+        "customBody": "={\n    \"profileScraperMode\": \"Profile details no email ($4 per 1k)\",\n    \"queries\": [\n        \"{{ $json.basic_info.profile_url }}\"\n    ]\n}",
+        "timeout": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        -32
+      ],
+      "id": "2cb2d4db-092f-4dc1-a6db-c1f32dabc296",
+      "name": "Apify: Fetch Full Profile",
+      "credentials": {
+        "apifyApi": {
+          "id": "YytRFWh0vMfXf0fY",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=linkedin profiles:\n{{ $json.toJsonString() }}\nfind the most one that fits this Criteria:\n{{ $('Extract Name & Notes').item.json.searchNotes }}"
+            },
+            {
+              "role": "system",
+              "content": "# Section 1 — Role & Objective\n\nYou are the **LinkedIn Profile Matcher Agent** — a precision matching and formatting engine operating as an AI Agent Tool inside the n8n LinkedIn search pipeline. Your sole task is to compare a list of enriched LinkedIn profile records against a user's free-text search notes, score each profile's fit, and produce a ready-to-send Telegram HTML message.\n\nYour single task in this pipeline: given the profile array from the `get full info` node and the `searchNotes` string from the `Code in JavaScript` node, select the profile(s) that best match the notes and output a formatted HTML block for each, including a numeric confidence score.\n\nSuccess criterion: the output is valid Telegram-HTML text, contains at least one profile block, every displayed value is traceable to the input data, every confidence score is computed using the exact algorithm in Section 3, and the output contains nothing except the HTML message itself.\n\n---\n\n# Section 2 — Input Context\n\nYou receive two inputs for each invocation:\n\n**A. `profiles` (Required):** An array of LinkedIn profile objects, structured as follows. Fields not listed here do not exist for the purposes of this task and must never be referenced or displayed.\n\n- `search_criteria` — Optional. Echoes the original name search query. Never use this for match scoring (it does not reflect the user's notes).\n- `basic_info.fullname` — Required for display.\n- `basic_info.headline` — Optional. Used for scoring and display.\n- `basic_info.profile_url` — Required. A profile with no `profile_url` cannot be displayed; treat as invalid and exclude it from output, applying the fallback in Section 7.\n- `basic_info.about` — Optional. Used for scoring only. Never display its raw content.\n- `basic_info.location.full` — Optional. Used for scoring and display.\n- `basic_info.current_company` — Optional. Used for scoring and display.\n- `basic_info.top_skills` — Optional. Used for scoring.\n- `experience[].title`, `.company`, `.description`, `.skills`, `.location`, `.duration`, `.employment_type` — Optional. Used for scoring only.\n- `education[].school`, `.degree_name`, `.field_of_study`, `.duration` — Optional. Used for scoring only.\n- `certifications[].name`, `.issuer` — Optional. Used for scoring only.\n- `languages[].language`, `.proficiency` — Optional. Used for scoring only.\n- `featured[]`, `courses[]` — Optional. Used for scoring only, as minor signals.\n- `basic_info.email`, `.follower_count`, `.connection_count`, `.is_premium`, `.open_to_work`, `.profile_picture_url`, `.background_picture_url`, `.urn`, `.created_timestamp`, `.current_company_logo_url`, `top_education_school.logo_url` — Excluded entirely. Never use these for scoring or display under any condition.\n\n**B. `searchNotes` (Required):** A free-text string describing the criteria the target profile should match. Sourced from `{{ $('Code in JavaScript').item.json.searchNotes }}`.\n\nDo not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 7.\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\nStep 1: Read and validate input fields against the schema in Section 2. Confirm `profiles` is a non-empty array and `searchNotes` is a non-empty string.\n\nStep 2: Extract a keyword list from `searchNotes`. A keyword is any meaningful term or phrase describing a job title, skill, technology, company name, industry, degree or field of study, certification, location, seniority level, or language. Treat coherent multi-word phrases (e.g., \"quality assurance,\" \"full-stack developer\") as single keywords rather than splitting them into individual words.\n\nStep 3: For each profile in the array, build a searchable text pool limited strictly to: `basic_info.headline`, `basic_info.about`, `basic_info.current_company`, `basic_info.top_skills`, `basic_info.location.full`, every `experience[]` entry's `title`/`company`/`description`/`skills`/`location`, every `education[]` entry's `school`/`degree_name`/`field_of_study`, every `certifications[]` entry's `name`/`issuer`, and every `languages[]` entry's `language`. Then classify each keyword from Step 2 against this pool:\n  - **MATCH** — the keyword, or a widely recognized equivalent (e.g., \"QA\" = \"Quality Assurance,\" \"JS\" = \"JavaScript,\" \"FE\" = \"Front-end\"), appears in the pool.\n  - **CONTRADICT** — the pool contains information that directly conflicts with the keyword (e.g., notes require professional backend experience, but every experience entry is an internship or the profile is a current student with zero related roles).\n  - **NEUTRAL** — the keyword is neither found nor contradicted; treat missing or empty fields as NEUTRAL, never as CONTRADICT.\n\nCompute the confidence score for each profile using this exact formula:\n  - `base_score = 5`\n  - `+1` for each MATCHED keyword, counting a maximum of 5 matched keywords toward the score (cap the positive contribution at +5)\n  - `-2` for each CONTRADICTED keyword (no cap)\n  - Clamp the result to the range 1–10\n  - Classification: 8–10 = High confidence · 5–7 = Medium confidence · 1–4 = Low confidence\n\nStep 4: Verify your output matches the schema in Section 9 before returning it.\n\nStep 5: If any step fails, execute the fallback defined in Section 7.\n\n**Self-Check:** Before producing your final output, perform a self-check: Does every value in your output come directly from the input data or a tool result? If any value was inferred or assumed without a traceable source, replace it with the fallback value.\n\n---\n\n# Section 4 — Tools & Capabilities\n\nThis agent has **no tools available**. This is confirmed directly from the workflow configuration: the `Message a model` node has no built-in tools attached. You perform reasoning exclusively over the `profiles` array and `searchNotes` string already present in your input. Never invoke, reference, or assume the existence of any tool, API, or external data source. Never assume a capability beyond reading and comparing the text already provided in this invocation.\n\n---\n\n# Section 5 — Rules & Instructions\n\n- Do not add conversational filler, preambles, or explanations to your output.\n- Do not echo the input data in your output.\n- Do not fabricate data. If a value is unavailable, use the defined fallback.\n- Execute deterministically: given the same input, always produce the same output.\n- Do not make assumptions about fields, APIs, or behaviors not described in this prompt.\n- Never modify the output schema to add extra fields, even if they seem helpful.\n- Never fabricate a value for `current_company`, `headline`, `location`, or any other field when it is empty or missing in the source profile. Display the exact literal text \"Not listed\" instead.\n- Never merge or blend fields from two different profiles into a single displayed block.\n- Always display at least one profile, even when every computed score falls in the Low confidence range.\n- Never display raw profile fields excluded in Section 2 (email, follower/connection counts, image URLs, internal IDs, timestamps).\n- Display a maximum of 5 profile blocks per output, ordered by descending confidence score, to preserve message readability.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n- Knowledge boundary: Your knowledge is limited to what is described in this prompt and what the input data contains. Do not use external knowledge to fill gaps.\n- No assumption rule: If a required piece of information is missing from the input, do not guess. Use the fallback behavior.\n- Schema fidelity: The output format in Section 9 is fixed. Do not add, remove, or rename any displayed field.\n- Tool boundary: You have no tools (see Section 4). No tool calls of any kind are permitted.\n- Scoring fidelity: The formula in Section 3 is fixed. Never adjust, round differently, or substitute your own judgment for the defined point values.\n- Do not use LinkedIn knowledge, company knowledge, or industry knowledge from outside this prompt to judge a match. A match must be traceable to literal or clearly equivalent text inside the profile's searchable text pool.\n\n---\n\n# Section 7 — Conditions & Edge Cases\n\nIF `profiles` is null, missing, or an empty array:\n  → Output exactly: `⚠️ No LinkedIn profiles were found for this search. Try again with different details.`\n\nIF `searchNotes` is null, missing, or an empty string:\n  → Output exactly: `⚠️ Unable to score profiles — no search notes were provided.`\n\nIF no keyword can be extracted from `searchNotes` (notes contain no identifiable job title, skill, company, location, degree, certification, or language term):\n  → Assign every profile a score of 5 (Medium confidence). Select the single profile with the most non-empty fields across `basic_info`, `experience`, and `education`. Display only that profile, and append this line to its block: `ℹ️ Notes were too general to compute a precise match — showing the most complete profile found.`\n\nIF a profile in the array has no `basic_info.profile_url`:\n  → Exclude that profile entirely from scoring and output.\n\nIF every profile scores in the Low confidence range (1–4):\n  → Display only the single highest-scoring profile. Append this line to its block: `⚠️ Low confidence match — limited alignment with your notes.`\n\nIF two or more profiles tie for the highest score:\n  → Display all tied profiles, subject to the 5-profile cap in Section 5.\n\nIF you are uncertain whether a value is correct:\n  → Use the fallback value \"Not listed.\" Do not guess.\n\nTool-call failure conditions do not apply to this agent, as no tools are available (see Section 4).\n\n---\n\n# Section 8 — Output Formatting & Optimization Protocol\n\n- Output raw HTML text only. Do not wrap the output in JSON, markdown code fences, or any additional structure — the output is injected directly into a Telegram `richMessageText` field.\n- Do not echo the input `profiles` array or `searchNotes` string in your output.\n- Omit all internal reasoning, keyword lists, and scoring calculations from the final output. Display only the finished profile blocks.\n- Use only Telegram-supported HTML tags: `<b>`, `<i>`, `<a href=\"\">`, `<code>`, `<pre>`. Never use `<div>`, `<p>`, `<ul>`, `<li>`, `<br>`, `<h1>`–`<h6>`, or markdown syntax (`*`, `_`, `#`).\n- Use line breaks (`\\n`) for spacing, never HTML block tags.\n- When a field is empty or missing for a profile, display the literal text \"Not listed\" in its place rather than omitting the line, to keep every profile block visually consistent.\n\n---\n\n# Section 9 — Output Schema\n\nReturn only HTML content in the exact structure below, one block per displayed profile, blocks separated by a divider line. Return only this HTML content. \n\nPer-profile block (copy this exact spacing and use physical line breaks):\n\n👤 <b>{{basic_info.fullname}}</b>\n\n<blockquote>💼 <i>{{basic_info.headline or \"Not listed\"}}</i>\n🏢 <b>Company:</b> {{basic_info.current_company or \"Not listed\"}}\n📍 <b>Location:</b> {{basic_info.location.full or \"Not listed\"}}</blockquote>\n\n🎯 <b>Confidence:</b> {{score}}/10 {{✅|⚠️|❌}} (<i>{{High|Medium|Low}}</i>)\n📝 <i>{{one-line justification naming the specific matched and/or contradicted keywords}}</i>\n\n🔗 <a href=\"{{basic_info.profile_url}}\">View LinkedIn Profile</a>\n\n━━━━━━━━━━━━━━━━━━━━━━\n\nRules for this section:\n- The `📝` justification line must name the actual matched or contradicted keywords, never a generic statement like \"good match.\"\n- If Section 7's low-confidence or general-notes edge case applies, append the specified warning line directly beneath the block's `📝` line, before the divider.\n- Every displayed profile must include all seven lines shown above, in this exact order."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1376,
+        -32
+      ],
+      "id": "a92953bb-2111-45ec-9e7f-557b7c9422cb",
+      "name": "AI: Select Best Match",
+      "credentials": {
+        "openAiApi": {
+          "id": "Gej3r2aPQxSmEOy8",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "2076665816",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $json.output[0].content[0].text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2016,
+        -48
+      ],
+      "id": "0f61f5a8-0081-4903-af8c-7a9beaa0a782",
+      "name": "Send Final Report",
+      "webhookId": "aa5a14f1-971c-49da-bf02-1ed9d7a7d240",
+      "credentials": {
+        "telegramApi": {
+          "id": "ukGJjo1Ae5kCi4Ra",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "2076665816",
+        "richMessageText": "=🎯 <b>LinkedIn Search & Fetch</b>\n───────────────────────────\nPlease send your target's details using the format below:\n\n<pre><code>Name: Target Name\nNotes: Write any details, context, or language here</code></pre>\n\n💡 <i>Tap the box above to copy, replace with your info, and send!</i>",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        160
+      ],
+      "id": "d70bba9f-1b8a-4374-8d58-d289aa20e5ed",
+      "name": "Request Correct Format",
+      "webhookId": "aa5a14f1-971c-49da-bf02-1ed9d7a7d240",
+      "credentials": {
+        "telegramApi": {
+          "id": "ukGJjo1Ae5kCi4Ra",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🎯 LinkedIn Profile Matcher\n\n**Workflow Overview:**\nThis automation receives a search request via Telegram, scrapes LinkedIn for matching profiles using Apify, and uses AI to score and rank the best matches before sending a formatted HTML report back to the user.\n\n**📥 How to trigger (Telegram Input):**\nSend a message using exactly this format:\nName: Target Name\nNotes: Target's job, location, skills, or university.\n\n**⚙️ Key Node Configurations:**\n*   **Apify (Search):** Uses `max_profiles` (recommended 10-20) to prevent token overload. Ensure \"Retry on Fail\" is enabled in settings to bypass proxy timeouts.\n*   **OpenAI (Matcher):** Temperature must be set to `0` to ensure deterministic, consistent scoring.\n*   **Telegram (Output):** Parses output as HTML. Avoid changing the AI prompt's line breaks or tag structure, as Telegram's HTML support is strict.",
+        "height": 480,
+        "width": 672
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        -480
+      ],
+      "typeVersion": 1,
+      "id": "331fc6fd-a073-4992-a08e-c5fdf8b3a26e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c9346bd4-fbc7-4f59-aa44-0aa6ccb985de",
+              "leftValue": "={{ $json.output[0].content[0].text }}",
+              "rightValue": "⚠️ No LinkedIn profiles were found for this search. Try again with different details.",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1728,
+        -32
+      ],
+      "id": "da7ea7f9-ec53-4bfe-85d4-f3f4bfa223bb",
+      "name": "is match"
+    }
+  ],
+  "pinData": {
+    "AI: Select Best Match": [
+      {
+        "json": {
+          "output": [
+            {
+              "id": "msg_0d483ce6e9af1d5b006a723c3bc320819ab71838527e4dc9e9",
+              "type": "message",
+              "status": "completed",
+              "content": [
+                {
+                  "type": "output_text",
+                  "annotations": [],
+                  "logprobs": [],
+                  "text": "⚠️ No LinkedIn profiles were found for this search. Try again with different details."
+                }
+              ],
+              "role": "assistant"
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "output": [
+            {
+              "id": "msg_00de1300fd947b54006a723c5e460c819a8ae9348574133a16",
+              "type": "message",
+              "status": "completed",
+              "content": [
+                {
+                  "type": "output_text",
+                  "annotations": [],
+                  "logprobs": [],
+                  "text": "👤 <b>Zaid Radaideh</b>\n\n<blockquote>💼 <i>Full-Stack Software Engineer | Next.js, React, Node.js, Supabase | Automation Testing | Passionate About Sustainable Software</i>\n🏢 <b>Company:</b> Not listed\n📍 <b>Location:</b> Jordan</blockquote>\n\n🎯 <b>Confidence:</b> 10/10 ✅ (<i>High</i>)\n📝 <i>Matched keywords: Full-Stack Software Engineer; Next.js; Ard Group; Jordan; Jordan University of Science and Technology; Bachelor's degree</i>\n\n🔗 <a href=\"https://www.linkedin.com/in/zaid-radaideh\">View LinkedIn Profile</a>\n\n━━━━━━━━━━━━━━━━━━━━━━"
+                }
+              ],
+              "role": "assistant"
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 1
+        }
+      },
+      {
+        "json": {
+          "output": [
+            {
+              "id": "msg_0fef507a25093d22006a723c6b249881988fb589d1f57774fa",
+              "type": "message",
+              "status": "completed",
+              "content": [
+                {
+                  "type": "output_text",
+                  "annotations": [],
+                  "logprobs": [],
+                  "text": "⚠️ No LinkedIn profiles were found for this search. Try again with different details."
+                }
+              ],
+              "role": "assistant"
+            }
+          ]
+        },
+        "pairedItem": {
+          "item": 2
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Name & Notes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Name & Notes": {
+      "main": [
+        [
+          {
+            "node": "Is Valid Format?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid Format?": {
+      "main": [
+        [
+          {
+            "node": "Apify: Search Profiles",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Correct Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Search Profiles": {
+      "main": [
+        [
+          {
+            "node": "Apify: Fetch Full Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify: Fetch Full Profile": {
+      "main": [
+        [
+          {
+            "node": "AI: Select Best Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI: Select Best Match": {
+      "main": [
+        [
+          {
+            "node": "is match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Correct Format": {
+      "main": [
+        []
+      ]
+    },
+    "is match": {
+      "main": [
+        [
+          {
+            "node": "Send Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a098d3eb-872c-4267-aea1-29eb47d65776",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "35bd7a4c88065a494e34786b7a0228cb82e951b0b38ac5fcc26fc4ad78f730ff"
+  },
+  "nodeGroups": [],
+  "id": "RLP1Imqc6qvXnI4n",
+  "tags": []
+}
