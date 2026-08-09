@@ -1,0 +1,1174 @@
+{
+  "name": "Workflow to GDrive Extractor",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -144,
+        80
+      ],
+      "id": "0f0a2897-aeef-4579-bad2-a8a248750389",
+      "name": "Telegram Trigger",
+      "webhookId": "cb6431b2-6207-48fd-a96f-2d5bf8f496dd",
+      "credentials": {
+        "telegramApi": {
+          "id": "GR9hA2kytALdrya9",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        -16
+      ],
+      "id": "562f6f6b-5937-45fc-aab1-824f837a2e10",
+      "name": "Get a file",
+      "webhookId": "1eae782b-2ddb-4c3a-9f12-baaa73cb8132",
+      "credentials": {
+        "telegramApi": {
+          "id": "GR9hA2kytALdrya9",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        528,
+        -16
+      ],
+      "id": "7272cc73-d6ff-4749-8698-ff76d4850deb",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "name": "={{ $binary.data.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Create folder').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        768,
+        208
+      ],
+      "id": "b56c3f07-720a-4c60-add7-5a8656dab3d9",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "e5xzWLqavk5vGQXo",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $json.data.name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "16YJf7Gwx31rFn6-fHFRwTivgEBUSQcVZ",
+          "mode": "list",
+          "cachedResultName": "part2",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/16YJf7Gwx31rFn6-fHFRwTivgEBUSQcVZ"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        752,
+        -16
+      ],
+      "id": "1f342e7c-94fa-4239-9227-730eebaf36a1",
+      "name": "Create folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "e5xzWLqavk5vGQXo",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f8815b5b-e116-418e-b171-fa31bf2fb501",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": 2076665816,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        80,
+        80
+      ],
+      "id": "bc8962d1-1b4b-47f7-a607-4866fae859c0",
+      "name": "Check Authorized User"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "غير مصرح لك باستعمال هذا البوت",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        304,
+        176
+      ],
+      "id": "0f746265-3cdf-462f-832f-4aae846b3080",
+      "name": "Send Unauthorized Alert",
+      "webhookId": "6b1414df-7167-4a16-ab45-1e20cfe565a0",
+      "credentials": {
+        "telegramApi": {
+          "id": "GR9hA2kytALdrya9",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// n8n Code Node — Extract Code & System Prompts as Binary Files\n// Mode: \"Run Once for All Items\"  (set this in the node's settings)\n// ============================================================\n// INPUT   One or more items whose JSON is (or contains) an n8n\n//         workflow object — i.e. it has a `.nodes` array. Works with:\n//           - the built-in \"n8n\" node's \"Get a workflow\" output\n//           - a workflow .json export read + parsed\n//\n// OUTPUT  ONE item PER extracted file — nothing else, so downstream\n//         nodes can map 1:1 over the array:\n//           -> json: {}  (n8n requires every item to have a json key\n//              by design; there's no way to omit it entirely, so it's\n//              left empty on purpose — functionally these items are\n//              just the files, no other data attached)\n//           -> binary.data: the real file (filename, extension and\n//              mime type are embedded in the binary object itself by\n//              prepareBinaryData), ready for \"Write Binary File to\n//              Disk\", email attachment, S3 upload, etc.\n//\n//         For every workflow processed, the array also includes ONE\n//         extra file: the complete workflow JSON itself (the same\n//         object that came in), named \"<workflow name>.json\" — same\n//         pure-binary shape as every other item.\n//\n//         Extension logic:\n//           system prompt (from an AI node)        -> .md\n//           Code node running in Python             -> .py\n//           Code node running in JavaScript          -> .js\n//         Filename = the node's name as it appears on the canvas.\n// ============================================================\n\nfunction getWorkflowObject(item) {\n  const j = item.json || {};\n  if (Array.isArray(j.nodes)) return j;\n  if (j.workflow && Array.isArray(j.workflow.nodes)) return j.workflow;\n  if (j.data && Array.isArray(j.data.nodes)) return j.data;\n  return null;\n}\n\nfunction sanitizeFileName(name) {\n  return String(name).replace(/[\\\\/:*?\"<>|\\x00-\\x1F]/g, '_').trim() || 'untitled';\n}\n\n// Recursively search a node's `parameters` for system-prompt style\n// fields, without hard-coding every single AI node type/version.\nfunction findSystemPrompts(obj, out) {\n  if (!obj || typeof obj !== 'object') return;\n\n  if (Array.isArray(obj)) {\n    for (const entry of obj) {\n      if (entry && typeof entry === 'object') {\n        const role = (entry.role || entry.type || '').toString().toLowerCase();\n        const content = entry.content ?? entry.message ?? entry.text;\n        if (role === 'system' && typeof content === 'string' && content.trim()) {\n          out.push(content);\n        }\n      }\n      findSystemPrompts(entry, out);\n    }\n    return;\n  }\n\n  for (const [key, value] of Object.entries(obj)) {\n    const k = key.toLowerCase();\n    if (\n      (k === 'systemmessage' || k === 'systemprompt' || k === 'system') &&\n      typeof value === 'string' &&\n      value.trim()\n    ) {\n      out.push(value);\n    } else if (typeof value === 'object') {\n      findSystemPrompts(value, out);\n    }\n  }\n}\n\n// Pull raw source code out of a node's parameters — covers the\n// current Code node, legacy Function / FunctionItem nodes, and\n// LangChain \"code\" style tool nodes.\nfunction findCode(node) {\n  const p = node.parameters || {};\n  const lang = (p.language || '').toLowerCase();\n\n  if (typeof p.pythonCode === 'string' && p.pythonCode.trim()) {\n    return { content: p.pythonCode, language: 'python' };\n  }\n  if (typeof p.jsCode === 'string' && p.jsCode.trim()) {\n    return { content: p.jsCode, language: 'javascript' };\n  }\n  if (typeof p.functionCode === 'string' && p.functionCode.trim()) {\n    return { content: p.functionCode, language: 'javascript' };\n  }\n  if (typeof p.code === 'string' && p.code.trim()) {\n    return { content: p.code, language: lang === 'python' ? 'python' : 'javascript' };\n  }\n  return null;\n}\n\nconst EXT = { javascript: 'js', python: 'py', markdown: 'md' };\nconst MIME = {\n  javascript: 'text/javascript',\n  python: 'text/x-python',\n  markdown: 'text/markdown',\n  json: 'application/json',\n};\n\nconst usedNames = new Map(); // collision-avoidance within this run\nfunction reserveFileName(baseName, ext) {\n  const key = `${baseName}.${ext}`.toLowerCase();\n  const count = usedNames.get(key) || 0;\n  usedNames.set(key, count + 1);\n  return count === 0 ? `${baseName}.${ext}` : `${baseName} (${count + 1}).${ext}`;\n}\n\nconst results = [];\n\nfor (const item of $('Extract from File').all()) {\n  const workflow = getWorkflowObject(item);\n  if (!workflow) continue;\n\n  const workflowName = workflow.name || 'Untitled workflow';\n  const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];\n\n  // ---- Extra file: the whole workflow JSON, same shape as the rest ----\n  {\n    const wfFileName = reserveFileName(sanitizeFileName(workflowName), 'json');\n    const wfBuffer = Buffer.from(JSON.stringify(workflow, null, 2), 'utf-8');\n    const wfBinaryData = await this.helpers.prepareBinaryData(\n      wfBuffer,\n      wfFileName,\n      MIME.json\n    );\n    results.push({\n      json: {},\n      binary: { data: wfBinaryData },\n    });\n  }\n\n  // ---- Collect every file to extract, then emit one binary item each ----\n  for (const node of nodes) {\n    const nodeName = node.name || node.id || 'unnamed-node';\n    const safeName = sanitizeFileName(nodeName);\n    const filesForThisNode = [];\n\n    const code = findCode(node);\n    if (code) {\n      filesForThisNode.push({\n        fileName: reserveFileName(safeName, EXT[code.language]),\n        content: code.content,\n        language: code.language,\n      });\n    }\n\n    const prompts = [];\n    findSystemPrompts(node.parameters, prompts);\n    for (const prompt of [...new Set(prompts)]) {\n      filesForThisNode.push({\n        fileName: reserveFileName(safeName, EXT.markdown),\n        content: prompt,\n        language: 'markdown',\n      });\n    }\n\n    for (const f of filesForThisNode) {\n      const buffer = Buffer.from(f.content, 'utf-8');\n      const binaryData = await this.helpers.prepareBinaryData(\n        buffer,\n        f.fileName,\n        MIME[f.language]\n      );\n\n      results.push({\n        json: {}, // intentionally empty — see note at the top of this file\n        binary: { data: binaryData },\n      });\n    }\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        -16
+      ],
+      "id": "432ceaa9-f607-45e5-b61b-d2113a8256fd",
+      "name": "Extract Prompts & Code"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "$binary",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        544,
+        208
+      ],
+      "id": "4b9e4516-2ebe-4a42-bd8d-98e64ff69e4b",
+      "name": "Split Binary Files"
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.parents[0] }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        992,
+        208
+      ],
+      "id": "24d05d21-01c3-4641-a1d2-be2938bc4826",
+      "name": "Make File Public",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "e5xzWLqavk5vGQXo",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "richMessageText": "=<b>{{ $('Upload file').item.json.name }}</b>\n<code>{{ $('Upload file').item.json.webViewLink }}</code>",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        96
+      ],
+      "id": "bcb8359d-1f13-41b6-9d9c-11b6127a5f80",
+      "name": "Send File Links",
+      "webhookId": "4258b605-8db1-41ec-974d-ff916630b369",
+      "credentials": {
+        "telegramApi": {
+          "id": "GR9hA2kytALdrya9",
+          "name": "Telegram account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Extract from File": [
+      {
+        "json": {
+          "data": {
+            "name": "LinkedIn DeepSight Pipeline",
+            "nodes": [
+              {
+                "parameters": {
+                  "updates": [
+                    "message"
+                  ],
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegramTrigger",
+                "typeVersion": 1.5,
+                "position": [
+                  -912,
+                  0
+                ],
+                "id": "5cfc7932-b90b-4f69-9be2-f5be3f024be5",
+                "name": "Telegram Trigger",
+                "webhookId": "63103598-ffb9-4389-b3dc-8ca6c61b2b58",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "projectId": {
+                    "__rl": true,
+                    "value": "n8n-gemini-app-500118",
+                    "mode": "list",
+                    "cachedResultName": "n8n-gemini-app"
+                  },
+                  "modelName": "gemini-3.6-flash",
+                  "options": {}
+                },
+                "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+                "typeVersion": 1,
+                "position": [
+                  -912,
+                  512
+                ],
+                "id": "44099366-27da-486e-9d87-5cee55870de9",
+                "name": "Google Vertex Chat Model",
+                "credentials": {
+                  "googleApi": {
+                    "id": "taJiZniL8M15zSeH",
+                    "name": "Google Service Account account 3"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "rules": {
+                    "values": [
+                      {
+                        "conditions": {
+                          "options": {
+                            "caseSensitive": true,
+                            "leftValue": "",
+                            "typeValidation": "strict",
+                            "version": 3
+                          },
+                          "conditions": [
+                            {
+                              "leftValue": "={{ $json.route }}",
+                              "rightValue": "ASK_FOR_URL",
+                              "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                              },
+                              "id": "7a250009-76cc-4d14-bd3e-e0d1c8b71d1f"
+                            }
+                          ],
+                          "combinator": "and"
+                        },
+                        "renameOutput": true,
+                        "outputKey": "ASK_FOR_URL"
+                      },
+                      {
+                        "conditions": {
+                          "options": {
+                            "caseSensitive": true,
+                            "leftValue": "",
+                            "typeValidation": "strict",
+                            "version": 3
+                          },
+                          "conditions": [
+                            {
+                              "id": "eb942684-9c64-498d-a461-104d4638740f",
+                              "leftValue": "={{ $json.route }}",
+                              "rightValue": "RUN_APIFY",
+                              "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                              }
+                            }
+                          ],
+                          "combinator": "and"
+                        },
+                        "renameOutput": true,
+                        "outputKey": "RUN_APIFY"
+                      },
+                      {
+                        "conditions": {
+                          "options": {
+                            "caseSensitive": true,
+                            "leftValue": "",
+                            "typeValidation": "strict",
+                            "version": 3
+                          },
+                          "conditions": [
+                            {
+                              "id": "a54d7cfc-8c32-4fe1-9370-bb2707467443",
+                              "leftValue": "={{ $json.route }}",
+                              "rightValue": "ANSWER_QUESTION",
+                              "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                              }
+                            }
+                          ],
+                          "combinator": "and"
+                        },
+                        "renameOutput": true,
+                        "outputKey": "ANSWER_QUESTION"
+                      }
+                    ]
+                  },
+                  "options": {}
+                },
+                "type": "n8n-nodes-base.switch",
+                "typeVersion": 3.4,
+                "position": [
+                  -288,
+                  -16
+                ],
+                "id": "376b8819-08ce-413e-98d9-39615fa3b775",
+                "name": "Switch"
+              },
+              {
+                "parameters": {
+                  "projectId": {
+                    "__rl": true,
+                    "value": "n8n-gemini-app-500118",
+                    "mode": "list",
+                    "cachedResultName": "n8n-gemini-app"
+                  },
+                  "modelName": "gemini-3.6-flash",
+                  "options": {}
+                },
+                "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+                "typeVersion": 1,
+                "position": [
+                  240,
+                  496
+                ],
+                "id": "60957662-aaa4-4618-bdf3-a0617c8bac52",
+                "name": "Google Vertex Chat Model1",
+                "credentials": {
+                  "googleApi": {
+                    "id": "taJiZniL8M15zSeH",
+                    "name": "Google Service Account account 3"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "sessionIdType": "customKey",
+                  "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "contextWindowLength": 10
+                },
+                "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+                "typeVersion": 1.4,
+                "position": [
+                  336,
+                  496
+                ],
+                "id": "a1d26637-550c-446d-809e-4acb3903df4b",
+                "name": "Simple Memory"
+              },
+              {
+                "parameters": {
+                  "jsonSchemaExample": "{\n  \"html\": \"<!DOCTYPE html><html><head><script src='[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)'></script></head><body><div class='dashboard'><h1>Executive Dashboard</h1>...</div></body></html>\",\n  \"vertex\": [\n    {\n      \"id\": \"7410276932463894528\",\n      \"topic\": \"Software Engineering Principles\",\n      \"sentiment\": \"Positive\",\n      \"technical_depth\": 8,\n      \"key_takeaway\": \"Emphasizes systems thinking over pure coding for maintainability.\"\n    },\n    {\n      \"id\": \"7410220047681515520\",\n      \"topic\": \"Machine Learning\",\n      \"sentiment\": \"Neutral/Educational\",\n      \"technical_depth\": 7,\n      \"key_takeaway\": \"Focuses on transitioning from traditional programming to data-driven AI systems.\"\n    }\n  ]\n}"
+                },
+                "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+                "typeVersion": 1.3,
+                "position": [
+                  -768,
+                  512
+                ],
+                "id": "c759f593-0e00-4b10-9326-712342973e21",
+                "name": "Structured Output Parser"
+              },
+              {
+                "parameters": {
+                  "jsCode": "// 1. Safely extract the HTML string from the nested output structure\nconst incomingData = $input.first().json;\nconst htmlContent = incomingData.output?.html || incomingData.html || \"<h1>No HTML provided</h1>\";\n\n// 2. Convert the HTML string into a Buffer\nconst binaryBuffer = Buffer.from(htmlContent, 'utf-8');\n\n// 3. Return the item with the file attached in the binary property\nreturn [\n  {\n    json: {\n      success: true,\n      message: \"HTML file generated successfully\"\n    },\n    binary: {\n      data: {\n        data: binaryBuffer.toString('base64'),\n        mimeType: 'text/html',\n        fileName: 'linkedin-report.html'\n      }\n    }\n  }\n];"
+                },
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                  -512,
+                  256
+                ],
+                "id": "99f543a4-d574-44fe-b3aa-a338d8ac87a9",
+                "name": "To HTML"
+              },
+              {
+                "parameters": {
+                  "jsCode": "// Retrieve the persistent global state\nconst staticData = $getWorkflowStaticData('global');\n\nreturn $input.all().map(item => {\n  const text = $('Telegram Trigger').first().json.message.text || \"\";\n  // Isolate the specific user via their Telegram Chat ID\n  const chatId = item.json.message?.chat?.id || \"default_user\";\n\n  // 1. Initialize memory for this specific user if it's their first time\n  if (!staticData[chatId]) {\n    staticData[chatId] = { status: \"AWAITING_URL\" };\n  }\n\n  // 2. Look for a LinkedIn URL in the user's message\n  const match = text.match(/(?:https?:\\/\\/)?(?:www\\.)?linkedin\\.com\\/[^\\s]+/i);\n  let route = \"\";\n\n  // 3. Routing Logic\n  if (text.trim() === \"/reset\") {\n    // Revert the user's state back to asking for a URL\n    staticData[chatId].status = \"AWAITING_URL\";\n    route = \"ASK_FOR_URL\";\n  }\n  else if (match) {\n    // User provided a valid URL. Update their status so they aren't asked again.\n    staticData[chatId].status = \"DATA_READY\"; \n    route = \"RUN_APIFY\"; \n  } \n  else if (staticData[chatId].status === \"DATA_READY\") {\n    // User already provided a URL previously. This is a follow-up question.\n    route = \"ANSWER_QUESTION\"; \n  } \n  else {\n    // User sent text, but hasn't provided a URL yet.\n    route = \"ASK_FOR_URL\"; \n  }\n\n  return {\n    json: {\n      chatId: chatId,\n      text: text,\n      route: route,\n      url: match ? match[0] : null\n    }\n  };\n});"
+                },
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                  -496,
+                  0
+                ],
+                "id": "7b364a2d-6cfe-4063-9578-71b0af849dc4",
+                "name": "Check URL & Determine Route"
+              },
+              {
+                "parameters": {
+                  "operation": "sendRichMessage",
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "richFormat": "markdown",
+                  "richMessageText": "**تم استلام الرابط!** 🔗\n\nجاري الآن سحب بيانات الملف الشخصي من لينكد إن... ⏳|",
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  -48,
+                  0
+                ],
+                "id": "138e859d-6f72-46cf-858d-251004052ee6",
+                "name": "Send \"Scraping Started\" Notice",
+                "webhookId": "5c70a859-3065-4690-865d-3c3b710ec0b2",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "operation": "Run actor and get dataset",
+                  "actorId": {
+                    "__rl": true,
+                    "value": "Wpp1BZ6yGWjySadk3",
+                    "mode": "id"
+                  },
+                  "customBody": "={\n    \"deepScrape\": true,\n    \"fetchDocumentDetails\": false,\n    \"limitPerSource\": 100,\n    \"numComments\": 10,\n    \"numLikes\": 5,\n    \"rawData\": false,\n    \"urls\": [\n        \"{{ $('Check URL & Determine Route').item.json.url}}\"\n    ]\n}"
+                },
+                "type": "@apify/n8n-nodes-apify.apify",
+                "typeVersion": 1,
+                "position": [
+                  192,
+                  0
+                ],
+                "id": "50bc8ce2-41ce-4933-b467-ff91b2696ec1",
+                "name": "Scrape LinkedIn (Apify)",
+                "retryOnFail": true,
+                "credentials": {
+                  "apifyApi": {
+                    "id": "YytRFWh0vMfXf0fY",
+                    "name": "Apify account"
+                  }
+                },
+                "onError": "continueErrorOutput"
+              },
+              {
+                "parameters": {
+                  "jsCode": "// Extract the JSON data from all incoming Apify items\nconst allPosts = $input.all().map(item => item.json);\n\n// Return exactly ONE item. \n// This completely stops the AI Agent from looping.\nreturn [\n  {\n    json: {\n      posts: allPosts\n    }\n  }\n];"
+                },
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                  416,
+                  -16
+                ],
+                "id": "5e379c94-ce29-4377-9cb5-80a630382ff3",
+                "name": "Bundle Posts into Single Array"
+              },
+              {
+                "parameters": {
+                  "operation": "sendRichMessage",
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "richFormat": "markdown",
+                  "richMessageText": "**اكتمل جمع البيانات بنجاح!** ✅\n\nيتم الآن دراسة المنشورات وتحليلها بدقة باستخدام الذكاء الاصطناعي... 🤖✨",
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  672,
+                  -16
+                ],
+                "id": "c1a3abd5-1a9a-44a1-bd94-b8b535e3c2f3",
+                "name": "Send \"AI Analysis Started\" Notice",
+                "webhookId": "bfc022b4-daec-4542-b670-e89a84a6f74e",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "promptType": "define",
+                  "text": "={{ $('Bundle Posts into Single Array').item.json.toJsonString() }}",
+                  "hasOutputParser": true,
+                  "options": {
+                    "systemMessage": "# Role & Objective\n\nYou are the **DeepSight Post Analyzer**, the first-stage AI agent in the LinkedIn DeepSight Pipeline (n8n node: `AI Agent`).\n\nYour single task: given the full post history of one LinkedIn profile or company page — including each post's text, engagement metrics, comments, and reactions — produce two things in one response:\n1. A complete, self-contained HTML report for direct delivery to the end user via Telegram.\n2. A structured, per-post analysis array that a second downstream AI agent will use as its sole knowledge base to answer any follow-up question about this person or company.\n\n**Success criterion:** A single valid JSON object containing exactly two top-level keys, `html` and `vertex`, where the `vertex` array contains exactly one entry for every post present in the input, in the same order, with no post skipped, merged, or invented.\n\n---\n\n# Input Context\n\nThe input is a single JSON object available as `{{ $json }}`, containing one key:\n\n- `posts` (required, array): every post scraped from the target LinkedIn profile.\n\nEach object inside `posts` may contain the following fields. Only fields listed here are confirmed to exist — do not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 7.\n\n**Per-post fields (required, present on every post):**\n- `text` (string) — the post's caption/body\n- `url` (string) — direct link to the post\n- `postedAtISO` (string) — publish date/time\n- `type` (string) — one of: `linkedinVideo`, `image`, `article`, `document`, `text`\n- `numLikes`, `numComments`, `numShares` (integers)\n- `isActivity` (boolean) — true if this is a repost/share rather than an original post\n- `comments` (array) — each item has `text` and `author` (`firstName`, `lastName`, `occupation`)\n- `reactions` (array) — each item has `type` and `profile` (`firstName`, `lastName`, `occupation`)\n\n**Per-post fields (optional / conditional):**\n- `numImpressions` — observed as `null` in all sampled data. Treat as unavailable; never display or calculate with it unless it is a non-null number.\n- `linkedinVideo`, `images`, `article`, `document` — only one of these appears, matching the post's `type`.\n- `activityDescription`, `activityOfCompany` — only present when `isActivity` is `true`.\n\n**Profile-level fields (required, repeated identically across all posts):**\n- `authorName`, `authorType`, `authorProfileUrl`, `inputUrl`\n- `authorFollowersCount` — a comma-formatted string (e.g., `\"2,166,295\"`), not a raw number. Strip commas before using it in any calculation.\n\nDo not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 7.\n\n---\n\n# Agent Behavior & Thinking Process\n\nStep 1: Read `posts` from the input and validate it against the schema in Section 2. Record the total post count as N.\nStep 2: For every post in `posts` (all N of them, in order), extract its engagement numbers, media type, and publish date, then analyze its `text`, `comments`, and `reactions` to determine its topic, sentiment, a one-to-two-sentence summary, and the dominant theme of audience reaction.\nStep 3: Aggregate cross-post statistics for the HTML report — totals and averages across all N posts, engagement distribution, posting frequency over time, and content-type breakdown (video/image/article/document/text) — using only real numbers computed from the input, never estimated ones. Build the `vertex` array with exactly one entry per post.\nStep 4: Verify your output matches the schema in Section 9, and specifically verify that `vertex.length === N`, before returning it.\nStep 5: If any step fails, execute the fallback defined in Section 7.\n\nBefore producing your final output, perform a self-check: Does every value in your output come directly from the input data or a tool result? If any value was inferred or assumed without a traceable source, replace it with the fallback value.\n\n---\n\n# Tools & Capabilities\n\nThis agent has no tools or external capabilities. It operates purely on the `posts` array supplied in Section 2 and its own language-generation ability.\n\nNever invoke a tool. No tools are available to this agent. All output must be derived solely from the input data described in Section 2 — never from external knowledge about the company, person, or industry.\n\n---\n\n# Rules & Instructions\n\n- Do not add conversational filler, preambles, or explanations to your output.\n- Do not echo the raw input data (full post text, full comment lists, image URLs) in your output.\n- Do not fabricate data. If a value is unavailable, use the defined fallback.\n- Execute deterministically: given the same input, always produce the same output.\n- Do not make assumptions about fields, APIs, or behaviors not described in this prompt.\n- Never modify the output schema to add extra fields, even if they seem helpful.\n- Process every single post in `posts` — do not stop early, sample, or summarize only \"notable\" posts.\n- Never use `numImpressions` in any calculation or statement unless its value is a non-null number.\n- Ground every `topic`, `sentiment`, and `summary` claim only in that specific post's own `text`, `comments`, and `reactions` — never infer company-wide facts not evidenced by the posts themselves.\n\n---\n\n# Limitations & Constraints\n\n- Knowledge boundary: Your knowledge is limited to what is described in this prompt and what the input data contains. Do not use external knowledge to fill gaps.\n- No assumption rule: If a required piece of information is missing from the input, do not guess. Use the fallback behavior.\n- Schema fidelity: The output schema in Section 9 is fixed. Do not add, remove, or rename any fields.\n- Tool boundary: You may only use tools listed in Section 4 — there are none. No other actions are permitted.\n- `numImpressions` is unreliable (observed as always `null`) and must never be presented as a real metric.\n- `authorFollowersCount` is a formatted string, not a number — never used directly in arithmetic without stripping formatting.\n\n---\n\n# Conditions & Edge Cases\n\nIF `posts` is missing or an empty array:\n  → Output: `{ \"html\": \"<!DOCTYPE html>...clear 'no posts found' message...\", \"vertex\": [] }`\n\nIF a post's `text` field is empty or missing:\n  → Derive `topic` and `summary` from its `type`, `comments`, and any conditional media field (e.g., `article.title`, `document.title`). Do not invent caption content that was never provided.\n\nIF a post's `comments` array is empty:\n  → Set `audience_reaction` to `\"No comments available\"`. Do not infer audience sentiment from likes/shares alone.\n\nIF a post's `reactions` array is empty:\n  → Do not reference reaction types in that post's analysis.\n\nIF `numImpressions` is `null`:\n  → Omit it entirely from HTML metrics and from any per-post reasoning.\n\nIF the number of generated `vertex` entries does not equal the length of `posts`:\n  → Do not return output. Re-process the missing posts before finalizing.\n\nIF you are uncertain whether a value is correct:\n  → Use the fallback value. Do not guess.\n\n---\n\n# Token Optimization Protocol\n\n- Do not echo the input data in your output.\n- Output raw JSON only. Do not wrap it in markdown code fences.\n- Do not include full comment or reaction lists in the `vertex` array — only the derived `audience_reaction` summary.\n- Do not include image, video, or document binary URLs in the `vertex` array; the `post_url` field is sufficient for reference.\n- Use concise key names as defined in Section 9.\n- Do not add explanatory comments inside the JSON.\n\n---\n\n# Output Schema\n\n```json\n{\n  \"html\": \"<!DOCTYPE html><html>...single self-contained report, no external file dependencies beyond a CDN chart library...</html>\",\n  \"vertex\": [\n    {\n      \"post_url\": \"https://www.linkedin.com/posts/...\",\n      \"posted_date\": \"2026-03-11T13:47:09.787Z\",\n      \"content_type\": \"linkedinVideo\",\n      \"engagement\": { \"likes\": 8305, \"comments\": 159, \"shares\": 928 },\n      \"topic\": \"UK banking license approval\",\n      \"sentiment\": \"Positive | Neutral | Negative | Mixed\",\n      \"summary\": \"Announces regulatory approval to operate as a fully licensed UK bank.\",\n      \"audience_reaction\": \"Mostly congratulatory, with some customer-service complaints mixed in.\"\n    }\n  ]\n}\n```\n\n- Return only this JSON object. Nothing before it, nothing after it.\n- All string values must be derived from input data or tool results — there are no tools, so all values must come from `posts`.\n- Both `html` and `vertex` fields must always be present, even in the empty-input fallback case.\n- The `vertex` array must contain exactly one object per post in `posts`, in the same order, using only the fields shown above."
+                  }
+                },
+                "type": "@n8n/n8n-nodes-langchain.agent",
+                "typeVersion": 3.1,
+                "position": [
+                  -912,
+                  272
+                ],
+                "id": "ad79f4d7-f82f-4c56-b0ab-d7270f7f67b5",
+                "name": "AI: Analyze Posts & Build Dashboard",
+                "executeOnce": false,
+                "retryOnFail": true,
+                "onError": "continueErrorOutput"
+              },
+              {
+                "parameters": {
+                  "operation": "sendDocument",
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "binaryData": true,
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  -288,
+                  256
+                ],
+                "id": "655649b7-c387-40ab-aba8-fc3b46cbfd34",
+                "name": "Send HTML Dashboard to User",
+                "webhookId": "d0a0efd8-3680-4e8b-8c26-9b895373c8b5",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "jsCode": "const data=$('AI: Analyze Posts & Build Dashboard').first().json.output.vertex\nreturn {data};"
+                },
+                "type": "n8n-nodes-base.code",
+                "typeVersion": 2,
+                "position": [
+                  -48,
+                  256
+                ],
+                "id": "69bae847-2b9f-4147-b9d1-96e51b24a4f8",
+                "name": "Extract Saved Post Data"
+              },
+              {
+                "parameters": {
+                  "promptType": "define",
+                  "text": "={{ $json.toJsonString() }}",
+                  "options": {
+                    "systemMessage": "# Role & Objective\n\nYou are the **DeepSight Q&A Agent**, the second-stage AI agent in the LinkedIn DeepSight Pipeline (n8n node: `AI Agent1`).\n\nYour single task: answer the user's question about a specific LinkedIn profile/company, using only the post-analysis data previously produced by the DeepSight Post Analyzer (Agent 1) for that same profile.\n\n**Success criterion:** A single, natural-language, conversational reply that is either (a) fully grounded in the provided post-analysis data with no invented facts, or (b) the fixed refusal defined in Section 7, when the question falls outside that data.\n\n---\n\n# Input Context\n\nThe input `{{ $json }}` is expected to contain:\n\n- `question` (required, string) — the user's current message/question.\n- `vertex` (required, array) — the per-post analysis array produced by Agent 1. Each object contains: `post_url`, `posted_date`, `content_type`, `engagement` (`likes`, `comments`, `shares`), `topic`, `sentiment`, `summary`, `audience_reaction`.\n- `html` (optional, string) — the full report HTML, if forwarded. This is a rendering artifact only; it contains no facts beyond what is already in `vertex` and must not be treated as an independent source of information.\n\nDo not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 7.\n\nNote: field names above (`question`, `vertex`, `html`) are the expected contract — if the upstream workflow uses different names for the same data, treat the equivalent fields as satisfying this section.\n\n---\n\n# Agent Behavior & Thinking Process\n\nStep 1: Read `question` and `vertex` (and `html`, if present) from the input and validate them against the schema in Section 2.\nStep 2: Classify whether `question` is about the LinkedIn profile, company, or posts represented in `vertex` (in-scope), or is unrelated to it (out-of-scope — general knowledge, other companies, other topics).\nStep 3: If in-scope, scan `vertex` for the specific post(s) relevant to the question — by topic, sentiment, date, or engagement — and compose your answer using only the matched values, translated into natural sentences. If out-of-scope, skip directly to the refusal behavior in Section 7.\nStep 4: Verify your output matches the format in Section 9 before returning it.\nStep 5: If any step fails, execute the fallback defined in Section 7.\n\nYou may also have access to the last several turns of this conversation via short-term memory, to keep multi-question conversations coherent. Memory may be used for continuity (e.g., resolving \"what about that one?\" to a previously discussed post) but must never be treated as a source of new facts — every factual claim must still trace back to the current turn's `vertex` data.\n\nBefore producing your final output, perform a self-check: Does every value in your output come directly from the input data? If any value was inferred or assumed without a traceable source in `vertex`, replace it with the fallback behavior in Section 7.\n\n---\n\n# Tools & Capabilities\n\nThis agent has no tools. It operates purely on the `vertex` data supplied in Section 2, its conversational memory, and its own language-generation ability.\n\nNever invoke a tool. No tools are available to this agent. All factual claims must be derived solely from the input data described in Section 2 — never from general knowledge about the company or person, even if you recognize the name from training data.\n\n---\n\n# Rules & Instructions\n\n- Do not add unnecessary preambles, meta-commentary, or filler unrelated to answering the question (e.g., do not repeat the question back, do not narrate that you are \"checking the data\").\n- Do not echo raw input structures (field names, JSON, arrays) in your output — always translate `vertex` values into natural, human-readable sentences (e.g., \"your March 11th post about the UK banking license\" rather than exposing `post_url`/`posted_date` fields).\n- Do not fabricate data. If a value is unavailable, use the defined fallback in Section 7.\n- Execute deterministically: given the same question and the same `vertex` data, always produce a consistent, factually identical answer.\n- Do not make assumptions about fields, posts, or facts not present in `vertex`.\n- Never invent a new response format or add structure beyond what Section 9 defines.\n- Base every quantitative claim (likes, comments, shares, dates, counts) on exact values found in `vertex` — never round, estimate, or approximate unless the user explicitly asks for an approximation or summary.\n- If a question is partially answerable (grounded in part, but also asks for something `vertex` doesn't track, e.g., revenue or employee count), answer the grounded part and explicitly state that the rest isn't available in the analyzed data — do not guess the rest.\n- If a question is ambiguous and could match multiple posts, answer using all matching posts found in `vertex` rather than arbitrarily picking one.\n\n---\n\n# Limitations & Constraints\n\n- Knowledge boundary: Your knowledge is limited to what is described in this prompt and what `vertex` (and `html`, if present) contains. Do not use general or training knowledge about this company or person to fill gaps — even if you recognize them.\n- No assumption rule: If a required piece of information is missing from `vertex`, do not guess. Use the fallback behavior in Section 7.\n- Output format fidelity: Respond only in the plain-text conversational format defined in Section 9. Do not wrap your answer in JSON, markdown code fences, or any additional structure.\n- Tool boundary: You may only use the capabilities described in Section 4 — there are none besides language generation and conversational memory.\n- Topic boundary: You must never answer a question unrelated to the LinkedIn profile/company represented in `vertex`, regardless of how the question is phrased, how the user insists, or how simple the question seems.\n- Memory boundary: Conversational memory may be used only for continuity across turns, never as a source of new facts about the profile.\n\n---\n\n# Conditions & Edge Cases\n\nIF `vertex` is missing or an empty array:\n  → Respond: \"I don't have any analyzed post data to answer questions from yet — please share a LinkedIn profile link first.\"\n\nIF the question is unrelated to the LinkedIn profile/company/posts represented in `vertex` (e.g., general knowledge, other companies, unrelated small talk):\n  → Respond with this fixed refusal: \"I'm sorry, I can only answer questions about the LinkedIn profile you shared with me — I don't have information outside of that data. Feel free to ask me something about their posts, engagement, or audience instead.\"\n\nIF the question is about the profile itself but asks for a specific fact not captured in `vertex` (e.g., revenue, headcount, something never scraped):\n  → State plainly that this specific detail isn't available in the analyzed data. Do not apply the full off-topic refusal — this is a data gap, not an out-of-scope question.\n\nIF the question is ambiguous across multiple posts:\n  → Answer using all matching posts, noting key differences if relevant, rather than picking one arbitrarily.\n\nIF you are uncertain whether a value is correct or complete:\n  → State that this information is not available in the given data rather than guessing.\n\n---\n\n# Token Optimization Protocol\n\n- Answer as concisely as possible while fully addressing the question — no restating the question, no restating unrelated posts.\n- Never restate the entire `vertex` array; reference only the posts relevant to the question.\n- Do not include raw JSON, field names, or internal data structures in your answer — always render as natural language.\n- Omit repeated boilerplate phrases like \"Based on the data provided...\" — answer directly.\n- Keep responses concise (roughly under 800 characters) unless the question explicitly requires a detailed breakdown, to stay readable as a single Telegram message.\n\n---\n\n# Output Schema\n\nFormat: a single plain-text message, written in natural conversational language, ready to be sent directly as a Telegram text message. No JSON, no markdown code fences, no field labels.\n\n**Example — in-scope answer:**\n\"Their most-liked post recently was about the UK banking license approval, with over 8,000 likes and 928 shares — most comments were congratulatory, with a few customer-service complaints mixed in.\"\n\n**Example — off-topic refusal:**\n\"I'm sorry, I can only answer questions about the LinkedIn profile you shared with me — I don't have information outside of that data. Feel free to ask me something about their posts, engagement, or audience instead.\"\n\nRules:\n- Return only the answer text — nothing before or after it.\n- If refusing, return only the fixed refusal sentence from Section 7, optionally followed by its invitation to ask something in-scope.\n- Never expose internal data structure fragments (`vertex`, `post_url`, `engagement`, etc.) as literal text in the response.\n- The response must be a single, complete message — no multi-part output requiring further parsing downstream."
+                  }
+                },
+                "type": "@n8n/n8n-nodes-langchain.agent",
+                "typeVersion": 3.1,
+                "position": [
+                  240,
+                  256
+                ],
+                "id": "a2a74423-9279-4787-8052-44ffca360b3d",
+                "name": "AI: Answer Follow-up Question",
+                "executeOnce": true,
+                "retryOnFail": true,
+                "onError": "continueErrorOutput"
+              },
+              {
+                "parameters": {
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "text": "={{ $json.output }}",
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  672,
+                  240
+                ],
+                "id": "a382264b-6f43-4d3a-b0db-e29405f9423b",
+                "name": "Send Answer to User",
+                "webhookId": "d0a0efd8-3680-4e8b-8c26-9b895373c8b5",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "operation": "sendRichMessage",
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "richFormat": "markdown",
+                  "richMessageText": "=**⚠️ إدخال غير صالح**\n\nيرجى إرسال **رابط صحيح لشركة على لينكد إن** للمتابعة.\n\n*مثال:* `https://www.linkedin.com/company/example`",
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  -48,
+                  -208
+                ],
+                "id": "4b5f0f8d-4d9a-456d-bf22-d14deaced24a",
+                "name": "Send \"Invalid URL\" Warning",
+                "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "operation": "sendRichMessage",
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "richFormat": "markdown",
+                  "richMessageText": "=**⚠️ عذراً، حدث خطأ أثناء استخراج البيانات**\n\nلم نتمكن من سحب المنشورات من الرابط الذي قمت بتزويدنا به. \n\n*يرجى التأكد من الآتي:*\n• الرابط صحيح ويعمل بشكل سليم.\n• الصفحة أو الحساب **عام (Public)** ويمكن الوصول إليه.\n\nيرجى إرسال رابط جديد للمحاولة مرة أخرى. 🔄",
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  352,
+                  -208
+                ],
+                "id": "3a330021-d00a-4b95-a346-f4666a9fbede",
+                "name": "Apify Error",
+                "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "operation": "sendRichMessage",
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "richFormat": "markdown",
+                  "richMessageText": "=**⚠️ عذراً، فشل تحليل البيانات**\n\nواجه الذكاء الاصطناعي مشكلة غير متوقعة أثناء محاولة قراءة وتحليل المنشورات. 🤖❌\n\n*قد يكون السبب:*\n• حجم البيانات (عدد المنشورات والتعليقات) كبير جداً للتحليل في دفعة واحدة.\n• حدث خطأ مؤقت في خوادم الذكاء الاصطناعي.\n\nيرجى المحاولة مرة أخرى لاحقاً، أو إرسال رابط جديد للبدء من جديد. 🔄",
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  -512,
+                  480
+                ],
+                "id": "d86f2655-0561-4952-a620-aa235c74d96f",
+                "name": "Send \"Analysis Error\" Alert",
+                "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              },
+              {
+                "parameters": {
+                  "operation": "sendRichMessage",
+                  "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+                  "richFormat": "markdown",
+                  "richMessageText": "=**⚠️ عذراً، لم أتمكن من الإجابة**\n\nحدث خطأ أثناء محاولة الذكاء الاصطناعي معالجة سؤالك والبحث في البيانات المحفوظة. 🤖❓\n\nيرجى المحاولة مرة أخرى بصياغة سؤالك بشكل مختلف، أو إرسال `/reset` للبدء من جديد برابط مختلف. 🔄",
+                  "additionalFields": {}
+                },
+                "type": "n8n-nodes-base.telegram",
+                "typeVersion": 1.2,
+                "position": [
+                  672,
+                  432
+                ],
+                "id": "599d6e28-eba7-447e-8811-dbc2c2c643c1",
+                "name": "Send \"Answer Error\" Message",
+                "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
+                "credentials": {
+                  "telegramApi": {
+                    "id": "ukGJjo1Ae5kCi4Ra",
+                    "name": "Telegram account"
+                  }
+                }
+              }
+            ],
+            "pinData": {},
+            "connections": {
+              "Telegram Trigger": {
+                "main": [
+                  [
+                    {
+                      "node": "Check URL & Determine Route",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Google Vertex Chat Model": {
+                "ai_languageModel": [
+                  [
+                    {
+                      "node": "AI: Analyze Posts & Build Dashboard",
+                      "type": "ai_languageModel",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Switch": {
+                "main": [
+                  [
+                    {
+                      "node": "Send \"Invalid URL\" Warning",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ],
+                  [
+                    {
+                      "node": "Send \"Scraping Started\" Notice",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ],
+                  [
+                    {
+                      "node": "AI: Answer Follow-up Question",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Google Vertex Chat Model1": {
+                "ai_languageModel": [
+                  [
+                    {
+                      "node": "AI: Answer Follow-up Question",
+                      "type": "ai_languageModel",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Simple Memory": {
+                "ai_memory": [
+                  [
+                    {
+                      "node": "AI: Answer Follow-up Question",
+                      "type": "ai_memory",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Structured Output Parser": {
+                "ai_outputParser": [
+                  [
+                    {
+                      "node": "AI: Analyze Posts & Build Dashboard",
+                      "type": "ai_outputParser",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "To HTML": {
+                "main": [
+                  [
+                    {
+                      "node": "Send HTML Dashboard to User",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Check URL & Determine Route": {
+                "main": [
+                  [
+                    {
+                      "node": "Switch",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Send \"Scraping Started\" Notice": {
+                "main": [
+                  [
+                    {
+                      "node": "Scrape LinkedIn (Apify)",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Scrape LinkedIn (Apify)": {
+                "main": [
+                  [
+                    {
+                      "node": "Bundle Posts into Single Array",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ],
+                  [
+                    {
+                      "node": "Apify Error",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Bundle Posts into Single Array": {
+                "main": [
+                  [
+                    {
+                      "node": "Send \"AI Analysis Started\" Notice",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Send \"AI Analysis Started\" Notice": {
+                "main": [
+                  [
+                    {
+                      "node": "AI: Analyze Posts & Build Dashboard",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "AI: Analyze Posts & Build Dashboard": {
+                "main": [
+                  [
+                    {
+                      "node": "To HTML",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ],
+                  [
+                    {
+                      "node": "Send \"Analysis Error\" Alert",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Send HTML Dashboard to User": {
+                "main": [
+                  [
+                    {
+                      "node": "Extract Saved Post Data",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Extract Saved Post Data": {
+                "main": [
+                  [
+                    {
+                      "node": "AI: Answer Follow-up Question",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "AI: Answer Follow-up Question": {
+                "main": [
+                  [
+                    {
+                      "node": "Send Answer to User",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ],
+                  [
+                    {
+                      "node": "Send \"Answer Error\" Message",
+                      "type": "main",
+                      "index": 0
+                    }
+                  ]
+                ]
+              },
+              "Send Answer to User": {
+                "main": [
+                  []
+                ]
+              }
+            },
+            "active": true,
+            "settings": {
+              "executionOrder": "v1",
+              "binaryMode": "separate",
+              "availableInMCP": false
+            },
+            "versionId": "c3819dd4-e372-4133-b9b6-c77cf81efdb5",
+            "meta": {
+              "templateCredsSetupCompleted": true,
+              "instanceId": "35bd7a4c88065a494e34786b7a0228cb82e951b0b38ac5fcc26fc4ad78f730ff"
+            },
+            "nodeGroups": [],
+            "id": "Ef2mSxPRtAHmk5ft",
+            "tags": []
+          }
+        },
+        "binary": {},
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 196749302,
+          "message": {
+            "message_id": 4,
+            "from": {
+              "id": 2076665816,
+              "is_bot": false,
+              "first_name": "Zaid",
+              "last_name": "Radaideh",
+              "username": "zaidr49",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 2076665816,
+              "first_name": "Zaid",
+              "last_name": "Radaideh",
+              "username": "zaidr49",
+              "type": "private"
+            },
+            "date": 1786276800,
+            "document": {
+              "file_name": "LinkedIn DeepSight Pipeline (2).json",
+              "mime_type": "application/json",
+              "file_id": "BQACAgQAAxkBAAMEanhrwFcjskzIYAiIU2_pBtEFwF0AAuotAAKz9chT_wThoV6lVjc9BA",
+              "file_unique_id": "AgAD6i0AArP1yFM",
+              "file_size": 41918
+            }
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Authorized User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Create folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Make File Public",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create folder": {
+      "main": [
+        [
+          {
+            "node": "Extract Prompts & Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Authorized User": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Unauthorized Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Prompts & Code": {
+      "main": [
+        [
+          {
+            "node": "Split Binary Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Binary Files": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make File Public": {
+      "main": [
+        [
+          {
+            "node": "Send File Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cbdd7e30-ce94-4cd5-b432-697aae5bd2ec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "35bd7a4c88065a494e34786b7a0228cb82e951b0b38ac5fcc26fc4ad78f730ff"
+  },
+  "nodeGroups": [],
+  "id": "6saqalQM3s2rVJ33",
+  "tags": []
+}
