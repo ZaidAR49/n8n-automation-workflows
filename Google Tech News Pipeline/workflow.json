@@ -1,0 +1,294 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "-1004361710069",
+        "binaryData": true,
+        "binaryPropertyName": "={{ $('Download Cover Image').item.binary.data }}",
+        "additionalFields": {
+          "caption": "={{ $json.output.alert_label }} • *{{ $json.output.category }}*\n\n*{{ $json.output.headline }}*\n\n{{ $json.output.summary }}\n\n💡 *الأهمية:*\n{{ $json.output.why_it_matters }}\n\n📊 *التقييم:* `{{ $json.output.importance_score }}`\n🏷 *الوسوم:* {{ $json.output.tags }}\n📅 *تاريخ النشر:* {{ $json.output.publishedAt.toDateTime().format('yyyy-MM-dd') }}\n\n[🔗 قراءة المقال كاملاً]({{ $json.output.url }})",
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2176,
+        912
+      ],
+      "id": "305351ff-a799-4bea-a5aa-3fcd024440a4",
+      "name": "Send a photo message",
+      "webhookId": "d967926b-2de4-4032-9fc0-a36c7a69ca4c",
+      "credentials": {
+        "telegramApi": {
+          "id": "FapWgVLSNdVsspO2",
+          "name": "Telegram account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1531264583166333078",
+          "mode": "id"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1538230524852568155",
+          "mode": "list",
+          "cachedResultName": "google-news",
+          "cachedResultUrl": "https://discord.com/channels/1531264583166333078/1538230524852568155"
+        },
+        "options": {},
+        "embeds": {
+          "values": [
+            {
+              "description": "={{ $json.output.alert_label }} • **{{ $json.output.category }}**\n\n**{{ $json.output.headline }}**\n\n{{ $json.output.summary }}\n\n💡 **الأهمية:**\n{{ $json.output.why_it_matters }}\n\n📊 **التقييم:** `{{ $json.output.importance_score }}`\n {{ $json.output.tags }}",
+              "author": "Zaid Radaideh",
+              "color": "#427BD0",
+              "timestamp": "={{ $json.output.publishedAt.toDateTime().format('yyyy-MM-dd') }}",
+              "title": "={{ $json.output.headline }}",
+              "url": "={{ $json.output.url }}",
+              "image": "={{ $json.output.imageUrl }}"
+            }
+          ]
+        },
+        "files": {
+          "values": []
+        }
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        688
+      ],
+      "id": "52117b6e-e489-4728-b427-4649c9d6059a",
+      "name": "Send a message",
+      "webhookId": "48f2f94a-2dc2-475c-87b1-a0ca34631bd9",
+      "credentials": {
+        "discordOAuth2Api": {
+          "id": "cyJdxfibstlEqG6o",
+          "name": "Discord account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "list",
+          "cachedResultName": "n8n-gemini-app"
+        },
+        "modelName": "gemini-3.7-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        1056
+      ],
+      "id": "2f878fa1-a99a-449d-8e27-6e0fdfc4d00c",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "LtwZOPHRgBYt07G9",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"title\": \"Introducing Gemini 3.7 Flash\",\n  \"url\": \"https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/\",\n  \"imageUrl\": \"https://storage.googleapis.com/gweb-uniblog-publish-prod/images/gemini-3-7-flash.max-600x600.format-webp.webp\",\n  \"categories\": \"Gemini models\",\n  \"publishedAt\": \"2026-08-13T17:00:00.000Z\",\n  \"headline\": \"🤖 جوجل تطلق Gemini 3.7 Flash بأداء أقوى للبرمجة والوكلاء الذكية\",\n  \"summary\": \"أعلنت جوجل عن إطلاق Gemini 3.7 Flash، وهو أحدث نموذج ذكاء اصطناعي من العائلة. تصفه الشركة بأنه أذكى نموذج عملي حتى الآن، مع تركيز خاص على مهام البرمجة والوكلاء الذكية (agents). يأتي الإصدار كتحديث مباشر ضمن سلسلة نماذج Gemini.\",\n  \"why_it_matters\": \"يعزز هذا الإصدار قدرات جوجل التنافسية في أدوات البرمجة المدعومة بالذكاء الاصطناعي، وقد يؤثر على كيفية بناء المطورين للوكلاء الذكية مستقبلاً.\",\n  \"category\": \"AI\",\n  \"tags\": \"#Gemini #Google #AI #LLM\",\n  \"importance_score\": \"8/10 — تحديث تقني مهم لنموذج ذكاء اصطناعي رئيسي\",\n  \"alert_label\": \"🔥 IMPORTANT\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1936,
+        1072
+      ],
+      "id": "3d9f05b9-edbc-4ced-bd37-6214c9fed317",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "content": "## 🚀 Google News Broadcast Pipeline\n\n### 📌 Overview\nFetches updates from **Google Blog RSS**, enriches content via **Gemini 3.7 Flash**, and broadcasts formatted posts to **Discord** and **Telegram**.\n\n---\n\n### ⚙️ Workflow Steps\n* **RSS Trigger:** Polls Google Blog hourly for new articles.\n* **Code & HTTP:** Cleans metadata, extracts image URLs, and downloads cover image binaries.\n* **Gemini LLM Chain:** Generates Arabic headlines, summaries, severity labels, categories, and tags.\n* **Discord & Telegram:** Posts rich embeds and photo messages with formatted Markdown captions.",
+        "height": 416,
+        "width": 608
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        352
+      ],
+      "typeVersion": 1,
+      "id": "4be1fdbd-acfb-430e-92ed-1b4b5e5af695",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "feedUrl": "https://blog.google/rss"
+      },
+      "type": "n8n-nodes-base.rssFeedReadTrigger",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        864
+      ],
+      "id": "4fc4a7d0-8de1-46d0-8780-c46435e56521",
+      "name": "Poll Google RSS"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const data = item.json;\n\n  // 1. Extract post URL and ID\n  const postUrl = data.link || data.guid || data.id || '';\n\n  // 2. Extract Image URL from the HTML content string\n  const rawContent = data.content || '';\n  const imgMatch = rawContent.match(/<img[^>]+src=\"([^\">]+)\"/);\n  const imageUrl = imgMatch ? imgMatch[1] : '';\n\n  // 3. Clean HTML from snippet while preserving <a> tags for links\n  const rawText = data.contentSnippet || data.description || rawContent;\n  const cleanSnippet = rawText.replace(/<\\/?(?!\\ba\\b)[a-z0-9]+[^>]*>/ig, '').trim();\n\n  // 4. Normalize categories\n  let categoriesStr = '';\n  if (Array.isArray(data.categories)) {\n    categoriesStr = data.categories.map(c => typeof c === 'object' ? (c.name || c._ || '') : c).filter(Boolean).join(', ');\n  } else if (typeof data.categories === 'string') {\n    categoriesStr = data.categories;\n  }\n\n  // 5. Return clean structured data\n  return {\n    json: {\n      title: (data.title || '').trim(),\n      imageUrl: imageUrl,\n      snippet: cleanSnippet,\n      url: postUrl,\n      categories: categoriesStr,\n      publishedAt: data.isoDate || data.pubDate || ''\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        864
+      ],
+      "id": "58cee582-2d10-4232-80c9-6e3d996ba5e4",
+      "name": "Clean & Parse Feed"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1568,
+        864
+      ],
+      "id": "f7a4fad1-36b2-4a85-8ea4-53146d5250d0",
+      "name": "Download Cover Image"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.toJsonString() }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "# Section 1 — Role & Objective  You are the **Tech News Enrichment Agent**, operating as the Basic LLM Chain node inside the n8n pipeline \"Google Blog RSS → Telegram/Discord Alert\" — positioned between the **HTTP Request** node (image download) and the **Send a message / Send a photo message** nodes.  Your single task: take one normalized RSS news item and enrich it with Arabic-language editorial content plus structured metadata, while preserving every original input field unchanged so downstream Telegram and Discord node expressions keep working without modification.  **Success criterion:** you return exactly one JSON object matching the schema in Section 9 — all pass-through fields copied verbatim from the input, and all AI-generated fields populated strictly according to the rules in this prompt.  ---  # Section 2 — Input Context  You will receive a single item with the following fields, produced by the upstream \"Code in JavaScript\" node:  | Field | Required | Description | |---|---|---| | `title` | Required | Original English RSS headline | | `imageUrl` | Optional | Source image URL extracted from RSS content | | `snippet` | Required | Cleaned article snippet/description — this is your ONLY source of factual content | | `url` | Required | Canonical article link | | `categories` | Optional | Raw RSS-provided category/tag string (may be empty) | | `publishedAt` | Optional | ISO/RFC date string |  Do not reference or assume any field not listed here. If an expected field is absent, trigger the fallback behavior defined in Section 7.  ---  # Section 3 — Agent Behavior & Thinking Process  Step 1: Read and validate input fields against the schema in Section 2. Step 2: Read `snippet` and `title` as the ONLY source of factual content — do not draw on outside knowledge about the company, product, or topic. Step 3: Generate fields in this fixed order: `category` → `importance_score` → `alert_label` → `tags` → `headline` → `summary` → `why_it_matters`. Classify before writing creative text, so the creative fields stay consistent with the classification. Step 4: Verify your output matches the schema in Section 9 before returning it. Step 5: If any step fails, execute the fallback defined in Section 7.  **Self-Check:** Before producing your final output, perform a self-check: Does every generated field trace back only to `title` or `snippet`? Does every pass-through field match the input exactly? If any value was inferred from outside knowledge or left ungrounded, replace it with the fallback value.  ---  # Section 4 — Tools & Capabilities  This agent has **no tools or external API access** in this workflow. Never invoke a tool not listed here. Never assume a tool's behavior beyond what is described in this section. All output must be generated purely from the input fields described in Section 2.  ---  # Section 5 — Rules & Instructions  - Do not add conversational filler, preambles, or explanations to your output. - Do not echo the raw input data as a separate block in your output. - Do not fabricate data. If a value is unavailable, use the defined fallback. - Execute deterministically: given the same input, always produce the same output. - Do not make assumptions about fields, APIs, or behaviors not described in this prompt. - Never modify the output schema to add extra fields, even if they seem helpful. - Base `headline`, `summary`, and `why_it_matters` **only** on `snippet` and `title` — never on assumed outside knowledge of the topic. - Write `headline`, `summary`, and `why_it_matters` in clear Modern Standard Arabic (فصحى واضحة وسهلة القراءة). Product, company, and technical proper nouns may remain in Latin script mid-sentence. - Keep `category`, `tags`, and `alert_label` in English/Latin script exactly as defined in Section 9 — never translate these. - `category` must be exactly one value from the fixed list in Section 9. Never invent a new category. - `tags` must be a single space-separated hashtag string (3–6 tags, e.g. `#Gemini #Google #AI`), built only from entities/technologies explicitly named in `title` or `snippet`. - `headline` is a **new** field (Arabic, rewritten, may start with one relevant emoji) — never overwrite the original `title` field. - Pass through `title`, `imageUrl`, `url`, `categories`, and `publishedAt` completely unchanged — no translation, no reformatting, no omission.  ---  # Section 6 — Limitations & Constraints  - **Knowledge boundary:** Your knowledge is limited to what is described in this prompt and what `title`/`snippet` contain. Do not use external knowledge to fill gaps in facts. - **No assumption rule:** If a required piece of information is missing from the input, do not guess. Use the fallback behavior. - **Schema fidelity:** The output schema in Section 9 is fixed. Do not add, remove, or rename any fields. - **Tool boundary:** No tools are available. No actions beyond text generation are permitted. - **Language boundary:** Arabic fields must not mix in full English sentences. - **Scoring boundary:** `alert_label` must always be mechanically derived from `importance_score` per Section 7 — never chosen independently.  ---  # Section 7 — Conditions & Edge Cases  IF a required input field (`title`, `snippet`, or `url`) is null or missing:   → Output: `{ \"status\": \"error\", \"reason\": \"missing_field:<field_name>\", \"data\": null }`  IF `snippet` is empty or missing but `title` is present:   → Generate `summary` and `why_it_matters` from `title` alone, and prefix `summary` with: `\"بيانات محدودة من المصدر: \"`  IF the input data does not match the expected schema:   → Do not attempt to process it. Return the error schema immediately.  IF category cannot be confidently determined from `title`/`snippet`:   → Default to `\"Software\"` (fixed fallback — the most general tech bucket). If `categories` (raw input) contains a keyword clearly matching one of the 9 fixed categories, prefer that signal over the default.  **Importance score rubric (deterministic default — no user rubric was provided):** | Score range | Criteria | |---|---| | 9–10/10 | Major industry-wide event: flagship product/model launch, major acquisition, landmark regulation, large-scale security breach | | 6–8/10 | Notable update with real utility: feature release, funding round, partnership, moderate vulnerability patch | | 3–5/10 | Incremental/minor update: small feature tweak, routine release, minor company news | | 1–2/10 | Very low impact / informational only: rumor, opinion piece, minor blog note |  Format: `\"<score>/10 — <short Arabic reason>\"`, e.g. `\"9/10 — إعلان كبير يؤثر على الصناعة بأكملها\"`.  **`alert_label` is mechanically tied to `importance_score`** (never chosen independently): - `importance_score` ≥ 9 → `\"🚨 BREAKING\"` - `importance_score` 6–8 → `\"🔥 IMPORTANT\"` - `importance_score` ≤ 5 → `\"📰 NEWS\"`  IF you are uncertain whether a generated value is correct:   → Use the fallback value. Do not guess.  ---  # Section 8 — Token Optimization Protocol  - Do not echo the input data as a separate block in your output. - Output raw JSON only. Do not wrap it in markdown code fences. - Omit all reasoning from the final output unless the input contains a field `\"debug\": true`. - Keep `summary` to a maximum of 4 sentences and `why_it_matters` to a maximum of 2 sentences. - Do not include null fields in your output unless the downstream schema explicitly requires them. - Do not add explanatory comments inside the JSON.  ---  # Section 9 — Output Schema  ```json {   \"title\": \"unchanged from input.title\",   \"url\": \"unchanged from input.url\",   \"imageUrl\": \"unchanged from input.imageUrl\",   \"categories\": \"unchanged from input.categories\",   \"publishedAt\": \"unchanged from input.publishedAt\",   \"headline\": \"AI-rewritten Arabic headline, one optional relevant emoji prefix, e.g. 🤖 جوجل تكشف عن تحديثات ضخمة لمنصة Gemini\",   \"summary\": \"2-4 sentence Arabic summary, grounded only in title/snippet\",   \"why_it_matters\": \"1-2 sentence Arabic explanation of practical significance\",   \"category\": \"AI | Software | Hardware | Cybersecurity | Cloud | Programming | Startups | Business | Science\",   \"tags\": \"#Tag1 #Tag2 #Tag3 (3-6 space-separated hashtags, English/Latin script)\",   \"importance_score\": \"<n>/10 — <short Arabic reason>\",   \"alert_label\": \"🚨 BREAKING | 🔥 IMPORTANT | 📰 NEWS\" } ```  - Return only this JSON object. Nothing before it, nothing after it. - Pass-through fields (`title`, `url`, `imageUrl`, `categories`, `publishedAt`) must be copied exactly from input, unmodified. - Generated fields (`headline`, `summary`, `why_it_matters`, `category`, `tags`, `importance_score`, `alert_label`) must be derived only from `title` and `snippet` — never from outside knowledge. - Every field listed above must always be present."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1792,
+        864
+      ],
+      "id": "e2563525-87db-4af1-bb15-619b25671be6",
+      "name": "Enrich with Gemini"
+    }
+  ],
+  "connections": {
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Enrich with Gemini",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Enrich with Gemini",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Google RSS": {
+      "main": [
+        [
+          {
+            "node": "Clean & Parse Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean & Parse Feed": {
+      "main": [
+        [
+          {
+            "node": "Download Cover Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Cover Image": {
+      "main": [
+        [
+          {
+            "node": "Enrich with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "64ab86774cb2c59d2c3c00fffeaed527e13724a09d0d1643a745ff6162492585"
+  }
+}
