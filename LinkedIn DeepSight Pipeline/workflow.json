@@ -1,5 +1,4 @@
 {
-  "name": "LinkedIn DeepSight Pipeline",
   "nodes": [
     {
       "parameters": {
@@ -11,10 +10,10 @@
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.5,
       "position": [
-        -912,
-        0
+        -64,
+        144
       ],
-      "id": "5cfc7932-b90b-4f69-9be2-f5be3f024be5",
+      "id": "cfd2648d-7ed3-4b32-831c-4eab11c88d7e",
       "name": "Telegram Trigger",
       "webhookId": "63103598-ffb9-4389-b3dc-8ca6c61b2b58",
       "credentials": {
@@ -38,10 +37,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
       "typeVersion": 1,
       "position": [
-        -912,
-        512
+        -160,
+        656
       ],
-      "id": "44099366-27da-486e-9d87-5cee55870de9",
+      "id": "cc26cdc9-6426-452e-8c2d-83251e726474",
       "name": "Google Vertex Chat Model",
       "credentials": {
         "googleApi": {
@@ -133,10 +132,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -288,
-        -16
+        560,
+        128
       ],
-      "id": "376b8819-08ce-413e-98d9-39615fa3b775",
+      "id": "4b04be2b-2b5c-42a3-9296-b07d5240e9cd",
       "name": "Switch"
     },
     {
@@ -153,10 +152,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
       "typeVersion": 1,
       "position": [
-        240,
-        496
+        1088,
+        640
       ],
-      "id": "60957662-aaa4-4618-bdf3-a0617c8bac52",
+      "id": "6beee4c0-8af4-4c6e-8b92-8a63a606ab10",
       "name": "Google Vertex Chat Model1",
       "credentials": {
         "googleApi": {
@@ -174,24 +173,11 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
       "position": [
-        336,
-        496
+        1184,
+        640
       ],
-      "id": "a1d26637-550c-446d-809e-4acb3903df4b",
+      "id": "e4693586-d456-4e41-8ba9-c551a815373c",
       "name": "Simple Memory"
-    },
-    {
-      "parameters": {
-        "jsonSchemaExample": "{\n  \"html\": \"<!DOCTYPE html><html><head><script src='[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)'></script></head><body><div class='dashboard'><h1>Executive Dashboard</h1>...</div></body></html>\",\n  \"vertex\": [\n    {\n      \"id\": \"7410276932463894528\",\n      \"topic\": \"Software Engineering Principles\",\n      \"sentiment\": \"Positive\",\n      \"technical_depth\": 8,\n      \"key_takeaway\": \"Emphasizes systems thinking over pure coding for maintainability.\"\n    },\n    {\n      \"id\": \"7410220047681515520\",\n      \"topic\": \"Machine Learning\",\n      \"sentiment\": \"Neutral/Educational\",\n      \"technical_depth\": 7,\n      \"key_takeaway\": \"Focuses on transitioning from traditional programming to data-driven AI systems.\"\n    }\n  ]\n}"
-      },
-      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-      "typeVersion": 1.3,
-      "position": [
-        -768,
-        512
-      ],
-      "id": "c759f593-0e00-4b10-9326-712342973e21",
-      "name": "Structured Output Parser"
     },
     {
       "parameters": {
@@ -200,10 +186,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -512,
-        256
+        336,
+        400
       ],
-      "id": "99f543a4-d574-44fe-b3aa-a338d8ac87a9",
+      "id": "f09c4432-dc58-45b3-95ca-6fe238eb6ccc",
       "name": "To HTML"
     },
     {
@@ -213,10 +199,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -496,
-        0
+        256,
+        144
       ],
-      "id": "7b364a2d-6cfe-4063-9578-71b0af849dc4",
+      "id": "cb93a5d9-8b55-4e70-8552-b22acdf435ed",
       "name": "Check URL & Determine Route"
     },
     {
@@ -230,10 +216,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -48,
-        0
+        816,
+        144
       ],
-      "id": "138e859d-6f72-46cf-858d-251004052ee6",
+      "id": "ac35a461-8cdc-4a56-8c9a-aeb3d27b778d",
       "name": "Send \"Scraping Started\" Notice",
       "webhookId": "5c70a859-3065-4690-865d-3c3b710ec0b2",
       "credentials": {
@@ -251,15 +237,15 @@
           "value": "Wpp1BZ6yGWjySadk3",
           "mode": "id"
         },
-        "customBody": "={\n    \"deepScrape\": true,\n    \"fetchDocumentDetails\": false,\n    \"limitPerSource\": 100,\n    \"numComments\": 10,\n    \"numLikes\": 5,\n    \"rawData\": false,\n    \"urls\": [\n        \"{{ $('Check URL & Determine Route').item.json.url}}\"\n    ]\n}"
+        "customBody": "={\n  \"deepScrape\": true,\n  \"fetchDocumentDetails\": false,\n  \"limitPerSource\": 100,\n  \"numComments\": 10,\n  \"numLikes\": 5,\n  \"rawData\": false,\n  \"urls\": [\n   \"{{ $('Check URL & Determine Route').item.json.url }}\"\n  ]\n}"
       },
       "type": "@apify/n8n-nodes-apify.apify",
       "typeVersion": 1,
       "position": [
-        192,
-        0
+        1024,
+        144
       ],
-      "id": "50bc8ce2-41ce-4933-b467-ff91b2696ec1",
+      "id": "fa50c14a-050a-428d-ac5b-e5509e91718e",
       "name": "Scrape LinkedIn (Apify)",
       "retryOnFail": true,
       "credentials": {
@@ -277,10 +263,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
-        -16
+        1264,
+        128
       ],
-      "id": "5e379c94-ce29-4377-9cb5-80a630382ff3",
+      "id": "78eee621-3882-441c-a1a6-455624c0ecb0",
       "name": "Bundle Posts into Single Array"
     },
     {
@@ -294,10 +280,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        672,
-        -16
+        1520,
+        128
       ],
-      "id": "c1a3abd5-1a9a-44a1-bd94-b8b535e3c2f3",
+      "id": "affc0f2f-e134-40d1-94c9-e03182a5b4c1",
       "name": "Send \"AI Analysis Started\" Notice",
       "webhookId": "bfc022b4-daec-4542-b670-e89a84a6f74e",
       "credentials": {
@@ -319,10 +305,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        -912,
-        272
+        -64,
+        416
       ],
-      "id": "ad79f4d7-f82f-4c56-b0ab-d7270f7f67b5",
+      "id": "15b62e13-22a7-41d2-882e-74879b54ec08",
       "name": "AI: Analyze Posts & Build Dashboard",
       "executeOnce": false,
       "retryOnFail": true,
@@ -338,10 +324,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -288,
-        256
+        560,
+        400
       ],
-      "id": "655649b7-c387-40ab-aba8-fc3b46cbfd34",
+      "id": "83d158bc-5706-47c0-b3c0-c9972071f09b",
       "name": "Send HTML Dashboard to User",
       "webhookId": "d0a0efd8-3680-4e8b-8c26-9b895373c8b5",
       "credentials": {
@@ -358,10 +344,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -48,
-        256
+        800,
+        400
       ],
-      "id": "69bae847-2b9f-4147-b9d1-96e51b24a4f8",
+      "id": "d0603e30-45db-4a88-b1db-deae3e6a0156",
       "name": "Extract Saved Post Data"
     },
     {
@@ -375,10 +361,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        240,
-        256
+        1088,
+        400
       ],
-      "id": "a2a74423-9279-4787-8052-44ffca360b3d",
+      "id": "9fceaaec-9787-4740-ab00-22795cd354fc",
       "name": "AI: Answer Follow-up Question",
       "executeOnce": true,
       "retryOnFail": true,
@@ -393,10 +379,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        672,
-        240
+        1520,
+        384
       ],
-      "id": "a382264b-6f43-4d3a-b0db-e29405f9423b",
+      "id": "bb34aac0-8d9b-4bc3-bbfe-95149896104f",
       "name": "Send Answer to User",
       "webhookId": "d0a0efd8-3680-4e8b-8c26-9b895373c8b5",
       "credentials": {
@@ -417,10 +403,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -48,
-        -208
+        848,
+        -144
       ],
-      "id": "4b5f0f8d-4d9a-456d-bf22-d14deaced24a",
+      "id": "b4fa632a-c37a-4ecb-9e06-7a52d8b00081",
       "name": "Send \"Invalid URL\" Warning",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
@@ -441,10 +427,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        352,
-        -208
+        1184,
+        -112
       ],
-      "id": "3a330021-d00a-4b95-a346-f4666a9fbede",
+      "id": "0c5ac394-12c0-43f4-badb-4eeabdcf19cd",
       "name": "Apify Error",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
@@ -465,10 +451,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        -512,
-        480
+        336,
+        624
       ],
-      "id": "d86f2655-0561-4952-a620-aa235c74d96f",
+      "id": "416e8724-3590-420a-a969-9204875ef68f",
       "name": "Send \"Analysis Error\" Alert",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
@@ -489,10 +475,10 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        672,
-        432
+        1552,
+        672
       ],
-      "id": "599d6e28-eba7-447e-8811-dbc2c2c643c1",
+      "id": "673482e3-1222-4a58-a26e-0a585296be89",
       "name": "Send \"Answer Error\" Message",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
@@ -501,9 +487,21 @@
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"html\": \"<!DOCTYPE html><html><head><script src='[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)'></script></head><body><div class='dashboard'><h1>Executive Dashboard</h1>...</div></body></html>\",\n  \"vertex\": [\n    {\n      \"id\": \"7410276932463894528\",\n      \"topic\": \"Software Engineering Principles\",\n      \"sentiment\": \"Positive\",\n      \"technical_depth\": 8,\n      \"key_takeaway\": \"Emphasizes systems thinking over pure coding for maintainability.\"\n    },\n    {\n      \"id\": \"7410220047681515520\",\n      \"topic\": \"Machine Learning\",\n      \"sentiment\": \"Neutral/Educational\",\n      \"technical_depth\": 7,\n      \"key_takeaway\": \"Focuses on transitioning from traditional programming to data-driven AI systems.\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        656
+      ],
+      "id": "61a788ca-8a8f-4bd7-9875-c7df601643ce",
+      "name": "Structured Output Parser"
     }
   ],
-  "pinData": {},
   "connections": {
     "Telegram Trigger": {
       "main": [
@@ -569,17 +567,6 @@
           {
             "node": "AI: Answer Follow-up Question",
             "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Structured Output Parser": {
-      "ai_outputParser": [
-        [
-          {
-            "node": "AI: Analyze Posts & Build Dashboard",
-            "type": "ai_outputParser",
             "index": 0
           }
         ]
@@ -716,24 +703,21 @@
         ]
       ]
     },
-    "Send Answer to User": {
-      "main": [
-        []
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI: Analyze Posts & Build Dashboard",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
-  },
-  "versionId": "c3819dd4-e372-4133-b9b6-c77cf81efdb5",
+  "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "35bd7a4c88065a494e34786b7a0228cb82e951b0b38ac5fcc26fc4ad78f730ff"
-  },
-  "nodeGroups": [],
-  "id": "Ef2mSxPRtAHmk5ft",
-  "tags": []
+  }
 }
