@@ -1,0 +1,512 @@
+{
+  "name": "Telegram YouTube Downloader",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        160,
+        672
+      ],
+      "id": "4040f420-bdb2-4ca1-bbea-6c02b137c7d2",
+      "name": "Telegram Trigger",
+      "webhookId": "dea4e61e-48e0-469e-bdfa-a35a36d5dfc5",
+      "credentials": {
+        "telegramApi": {
+          "id": "mOqtcfrfZjZtoLZG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $json.message || {};\nconst text = message.text || '';\nconst entities = message.entities || [];\n\nlet extractedUrl = null;\n\n// Find URL entity (raw text or hyperlink)\nconst urlEntity = entities.find(e => e.type === 'url' || e.type === 'text_link');\n\nif (urlEntity) {\n  if (urlEntity.type === 'text_link') {\n    extractedUrl = urlEntity.url;\n  } else if (urlEntity.type === 'url') {\n    extractedUrl = text.substring(urlEntity.offset, urlEntity.offset + urlEntity.length);\n  }\n} else {\n  // Fallback to text match if no entity exists\n  const match = text.match(/https?:\\/\\/[^\\s]+/i);\n  if (match) extractedUrl = match[0];\n}\n\n// Validate YouTube format and extract video ID\nconst ytRegex = /(?:youtube\\.com\\/(?:watch\\?v=|embed\\/|shorts\\/|live\\/)|youtu\\.be\\/)([a-zA-Z0-9_-]{11})/i;\nconst ytMatch = extractedUrl ? extractedUrl.match(ytRegex) : null;\n\nreturn {\n  json: {\n    isValid: Boolean(ytMatch),\n    youtubeUrl: ytMatch ? `https://www.youtube.com/watch?v=${ytMatch[1]}` : null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        672
+      ],
+      "id": "72e5bcc2-5750-44ff-aa4a-00ea57f3c305",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "richFormat": "markdown",
+        "richMessageText": "⚠️ **الرابط غير صالح!**\n\nيرجى إرسال رابط فيديو يوتيوب صحيح (فيديو عادي أو Shorts).\n\n📌 **أمثلة مقبولة:**\n• `https://www.youtube.com/watch?v=...`\n• `https://youtu.be/...`\n• `https://www.youtube.com/shorts/...`",
+        "additionalFields": {
+          "message_effect_id": "5104858069142078462"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        864
+      ],
+      "id": "0516c72a-967e-4956-89e1-594ff4ef05b1",
+      "name": "Send a rich message",
+      "webhookId": "1c338a3b-b598-498f-84e1-25f5320a080e",
+      "credentials": {
+        "telegramApi": {
+          "id": "mOqtcfrfZjZtoLZG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "richMessageText": "=<a href=\"{{ $json.youtubeUrl }}\">&#8203;</a>\n<strong> 🎬 تم استلام الرابط بنجاح!\nيرجى اختيار جودة الفيديو المطلوبة:\n</strong>",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "1080p ",
+                    "additionalFields": {
+                      "callback_data": "1080p"
+                    }
+                  },
+                  {
+                    "text": "720p ",
+                    "additionalFields": {
+                      "callback_data": "720p"
+                    }
+                  },
+                  {
+                    "text": "480p ",
+                    "additionalFields": {
+                      "callback_data": "480p"
+                    }
+                  },
+                  {
+                    "text": " Audio (MP3)",
+                    "additionalFields": {
+                      "callback_data": "144p"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "message_effect_id": "5107584321108051014"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        672
+      ],
+      "id": "d2dbdfbc-2919-4be4-b953-89ce8487992b",
+      "name": "Send a rich message1",
+      "webhookId": "2333c652-8ff8-43c1-93b6-a9eff63c80eb",
+      "credentials": {
+        "telegramApi": {
+          "id": "mOqtcfrfZjZtoLZG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "editMessageText",
+        "chatId": "={{ $('Telegram Trigger').item.json.callback_query.message.chat.id }}",
+        "messageId": "={{ $('Telegram Trigger').item.json.callback_query.message.message_id }}",
+        "text": " 🎬جاري معالجة وتحميل الفيديو...\n\nقد يستغرق هذا بضع دقائق، يرجى الانتظار ⏳",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        480
+      ],
+      "id": "e3bca65b-2a08-4a00-bf1e-34277d4b488e",
+      "name": "Edit a text message",
+      "webhookId": "f8960111-5459-41f9-8c53-8d2dce137938",
+      "credentials": {
+        "telegramApi": {
+          "id": "mOqtcfrfZjZtoLZG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7c42d336-8add-4590-bfa1-215817b70c14",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.callback_query.data }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Callback"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.isValid }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "71ff8187-9203-426e-a523-4169256ed7a1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "On Valid URL"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        656
+      ],
+      "id": "b638484c-5c9f-462a-b630-fd2596fecbbb",
+      "name": "Event Router"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "28adfd20-4cfc-47b9-9489-a4b6dc9e91e5",
+              "leftValue": "={{ $('Telegram Trigger').item.json.callback_query.data }}",
+              "rightValue": "144p",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1504,
+        384
+      ],
+      "id": "38cefa1a-1987-4588-9f24-37b5ccc3b6eb",
+      "name": "Is MP3"
+    },
+    {
+      "parameters": {
+        "operation": "Run actor and get dataset",
+        "actorId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "UUhJDfKJT2SsXdclR"
+        },
+        "customBody": "={\n    \"filenameTemplateParts\": [\n        \"title\"\n    ],\n    \"preferredFormat\": \"mp4\",\n    \"preferredQuality\": \"{{ $('Telegram Trigger').item.json.callback_query.data }}\",\n    \"storeInKVStore\": false,\n    \"videos\": [\n        {\n            \"url\": \"{{ $('Telegram Trigger').item.json.callback_query.message.rich_message.blocks[0].text[0].url }}\"\n        }\n    ]\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        480
+      ],
+      "id": "d2878e10-1e57-4612-8bc0-c35393f35c27",
+      "name": "Get Video",
+      "alwaysOutputData": true,
+      "credentials": {
+        "apifyApi": {
+          "id": "vUz3uFsOfQ433xzh",
+          "name": "Apify account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $('Telegram Trigger').item.json.callback_query.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": " تم تجهيز طلبك بنجاح!   ✨"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1728,
+        480
+      ],
+      "id": "a37167b1-f10b-4a05-960e-c699c48dbc89",
+      "name": "Send a video",
+      "webhookId": "a9d9aa65-3b7d-4735-b58e-092e34d8bacf",
+      "credentials": {
+        "telegramApi": {
+          "id": "mOqtcfrfZjZtoLZG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.downloadedFileUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1280,
+        384
+      ],
+      "id": "3c8a8f70-c6a2-4df8-b2d8-e4fd3a6c9066",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.callback_query.from.id }}",
+        "richFormat": "markdown",
+        "richMessageText": "❌ **حدث خطأ ما!**\n\nعذراً، لم نتمكن من إتمام طلبك. يرجى المحاولة مرة أخرى لاحقاً 🔄",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        576
+      ],
+      "id": "5a9f3ae1-8df7-4423-9f35-dd0ca54124fa",
+      "name": "Send a rich message2",
+      "webhookId": "528febd0-4765-49d5-8db9-aea9660a6637",
+      "credentials": {
+        "telegramApi": {
+          "id": "mOqtcfrfZjZtoLZG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAudio",
+        "chatId": "={{ $('Telegram Trigger').item.json.callback_query.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": " تم تجهيز طلبك بنجاح!   ✨"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1728,
+        288
+      ],
+      "id": "3a71a1c5-2c96-4d60-aff5-0a31b877d314",
+      "name": "Send an audio file",
+      "webhookId": "a9d9aa65-3b7d-4735-b58e-092e34d8bacf",
+      "credentials": {
+        "telegramApi": {
+          "id": "mOqtcfrfZjZtoLZG",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### 📥 YouTube Downloader Telegram Bot\n\n**Overview:**\nMulti-step conversational bot that validates incoming YouTube links, prompts the user to select video quality or audio format via inline buttons, triggers the Apify YouTube Downloader actor, and returns the media file back to Telegram.\n\n---\n\n### ⚙️ Workflow Steps:\n1. **Telegram Trigger:** Listens for text messages & callback queries (`inline_keyboard` clicks).\n2. **Validator / Router:** Regex checks the YouTube link & extracts canonical Video ID.\n3. **Quality Selection:** Prompts user with 1080p, 720p, 480p, 360p, or Audio options.\n4. **Apify Downloader Actor:** Fetches direct downloadable media stream.\n5. **Send to Telegram:** Delivers media (`Send Video` / `Send Audio`) directly to the user.\n\n---\n\n### 🔗 Example URL:\n`https://youtube.com/shorts/A4dYgziFpDw?si=qmDHjS-TEippuLeK`",
+        "height": 592,
+        "width": 640
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "49e9d5db-c4fe-4479-ab54-8fc9d32059bc",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Event Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Router": {
+      "main": [
+        [
+          {
+            "node": "Edit a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a rich message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a rich message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is MP3": {
+      "main": [
+        [
+          {
+            "node": "Send an audio file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit a text message": {
+      "main": [
+        [
+          {
+            "node": "Get Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a rich message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Is MP3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "04079d3c-c6d3-4d49-926d-23e9ae0b8570",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "64ab86774cb2c59d2c3c00fffeaed527e13724a09d0d1643a745ff6162492585"
+  },
+  "nodeGroups": [],
+  "id": "RASMjer2ge7fyJZx",
+  "tags": []
+}
