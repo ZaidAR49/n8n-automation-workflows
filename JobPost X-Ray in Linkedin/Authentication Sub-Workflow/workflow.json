@@ -1,0 +1,851 @@
+{
+  "name": "Authentication Sub-Workflow (Gatekeeper)",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "users",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=telegram_id",
+              "keyValue": "={{ $('Execute Workflow Trigger').item.json.Telegram.message.from.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        560
+      ],
+      "id": "eddff7c1-7154-4481-9dd7-e99d0f1f0d84",
+      "name": "Get a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BoNZoEBlzIOIBlMa",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fc28a575-7367-4833-b93f-06f16ca34b36",
+              "name": "lan",
+              "value": "ar",
+              "type": "string"
+            },
+            {
+              "id": "6fcac1f9-6990-4c33-b3b7-993d80a3ab16",
+              "name": "bot_username",
+              "value": "@YourAuthBotUsername",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        560
+      ],
+      "id": "4c27b415-2e84-4997-8f8f-252973e33894",
+      "name": "Set User Preferences"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "typeVersion": 1.1,
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -224,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "20c19610-7367-42f5-879c-7b1cc7d7302b",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "approved",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "b63ee4bb-1236-4fff-8c28-d2c85fd35a6e",
+                    "leftValue": "={{ $json.is_locked }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  },
+                  {
+                    "id": "e5f7e3a3-27da-4704-b295-21c961def6bb",
+                    "leftValue": "={{ $json.allowed_workflows }}",
+                    "rightValue": "={{ $('Execute Workflow Trigger').item.json.context.id }}",
+                    "operator": {
+                      "type": "array",
+                      "operation": "contains",
+                      "rightType": "any"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Authorized"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "f1a2b3c4-1111-4a2b-9c3d-a1b2c3d4e5f6",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "approved",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "f1a2b3c4-2222-4a2b-9c3d-a1b2c3d4e5f6",
+                    "leftValue": "={{ $json.is_locked }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  },
+                  {
+                    "id": "f1a2b3c4-3333-4a2b-9c3d-a1b2c3d4e5f6",
+                    "leftValue": "={{ $json.allowed_workflows }}",
+                    "rightValue": "={{ $('Execute Workflow Trigger').item.json.context.id }}",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notContains",
+                      "rightType": "any"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "WorkflowNotAllowed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "06521c33-03c7-4fa3-bce0-adfaf153fcb7",
+                    "leftValue": "={{ $json.is_locked }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Locked"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "b12c5395-32e5-4fe6-8bf4-6c136bfafb0f",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "pending",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "dba7de96-65f0-4bd3-835c-9ee0eb9692d7",
+                    "leftValue": "={{ $json.is_locked }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pending"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "9338401c-f480-4c22-a660-a4a1a3eec992",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "rejected",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "id": "deb23b7b-a262-4020-8bc6-e6468a2dbb8f",
+                    "leftValue": "={{ $json.is_locked }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Rejected"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "looseTypeValidation": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "id": "eca839f8-55e5-4230-ad6c-651f78e4e3c5",
+      "name": "Switch",
+      "notesInFlow": true,
+      "position": [
+        448,
+        496
+      ],
+      "notes": "Input comes from the Postgres \"Get a row\" node (connect manually after pasting). Output order: Authorized, WorkflowNotAllowed, Locked, Pending, Rejected, extra(fallback)."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a1b2c3d-4e5f-4071-8a1b-2c3d4e5f6071",
+              "name": "is_authorized",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "9a1b2c3d-4e5f-4072-8a1b-2c3d4e5f6072",
+              "name": "message",
+              "value": "={{ $('Set User Preferences').item.json.lan == 'ar' ? '🚫 **غير مصرح.** حسابك موثق، لكن لا تملك صلاحية استخدام هذا البوت تحديداً.\\n\\nلحل هذه المشكلة أو طلب الصلاحية، يرجى التواصل مع ' + $('Set User Preferences').item.json.bot_username : '🚫 **Not Authorized.** Your account is approved, but you don\\'t have permission to use this specific bot.\\n\\nTo resolve this or request access, please contact ' + $('Set User Preferences').item.json.bot_username }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "id": "660ab48c-a9d8-4560-83d3-530999947b5c",
+      "name": "Set Workflow Not Allowed Response",
+      "position": [
+        688,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f740ef6e-2bf6-42f6-aab3-1377114a73d1",
+              "name": "is_authorized",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "779e3aa8-02cc-4a5b-a59e-eba976339e68",
+              "name": "message",
+              "value": "={{ $('Set User Preferences').item.json.lan == 'ar' ? '🔒 **حساب مقفل.** تم إيقاف حسابك من قبل المسؤول.\\n\\nلحل هذه المشكلة، يرجى التواصل مع ' + $('Set User Preferences').item.json.bot_username : '🔒 **Account Locked.** Your account has been suspended by the admin.\\n\\nTo resolve this, please contact ' + $('Set User Preferences').item.json.bot_username }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "id": "75e2afdb-7212-40ad-844d-42f1c6c758e1",
+      "name": "Set Locked Response",
+      "position": [
+        688,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3f6fb0e8-69e2-4e88-8651-1fb3e9eb3a77",
+              "name": "is_authorized",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "af5a255e-4382-431b-9a37-1742ca95f88e",
+              "name": "message",
+              "value": "={{ $('Set User Preferences').item.json.lan == 'ar' ? '⏳ **طلبك قيد المراجعة.** لم تتم الموافقة على حسابك بعد.\\n\\nلمراجعة طلبك أو الاستفسار، يرجى التواصل مع ' + $('Set User Preferences').item.json.bot_username : '⏳ **Application Pending.** Your account has not been approved yet.\\n\\nTo check your status, please contact ' + $('Set User Preferences').item.json.bot_username }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "id": "02f94472-0730-4e0f-a5a4-b8ea3286bc2b",
+      "name": "Set Pending Response",
+      "position": [
+        688,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b38dd28e-5f84-450f-8f2d-c8f6d43d1928",
+              "name": "is_authorized",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "e55dbd21-cb52-47bf-b11a-e93f4491a647",
+              "name": "message",
+              "value": "={{ $('Set User Preferences').item.json.lan == 'ar' ? '❌ **تم الرفض.** تم رفض طلب وصولك إلى هذا البوت.\\n\\nلمعرفة السبب أو تقديم طلب جديد، يرجى التواصل مع ' + $('Set User Preferences').item.json.bot_username : '❌ **Access Denied.** Your request to access this bot has been rejected.\\n\\nTo find out why or reapply, please contact ' + $('Set User Preferences').item.json.bot_username }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "id": "1878a09d-c436-43ff-bcbd-f508401fdf2f",
+      "name": "Set Rejected Response",
+      "position": [
+        688,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e908847a-973c-4a57-a212-778c7797f920",
+              "name": "is_authorized",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "ecf503ca-d8bd-4eae-9064-e154661e7bf2",
+              "name": "message",
+              "value": "={{ $('Set User Preferences').item.json.lan == 'ar' ? '⚠️ **مطلوب التوثيق.** أنت غير مسجل في النظام.\\n\\nلإنشاء حساب والبدء، يرجى التواصل مع ' + $('Set User Preferences').item.json.bot_username : '⚠️ **Authentication Required.** You are not registered in the system.\\n\\nTo create an account and get started, please contact ' + $('Set User Preferences').item.json.bot_usernam }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "id": "d0ddea3a-b95e-4c8e-a0c0-36a5e55e49f6",
+      "name": "Set Fallback Response",
+      "position": [
+        688,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -224,
+        1392
+      ],
+      "id": "2df39dd8-2c8c-4669-be74-c3191effa753",
+      "name": "Telegram Trigger",
+      "webhookId": "f0ed6a6b-321c-476d-905d-368ae6903a57",
+      "credentials": {
+        "telegramApi": {
+          "id": "CHy32GLjBowjOJ3I",
+          "name": "Telegram account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "JelS421aBmdJ7wAW",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/JelS421aBmdJ7wAW",
+          "cachedResultName": "Authentication Sub-Workflow (Gatekeeper)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        1392
+      ],
+      "id": "72544728-a01b-4401-82d2-a67ff1b7e32a",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5303a8a4-14f8-4752-a87b-3cb4bf5ee256",
+              "leftValue": "={{ $json.is_authorized }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        1392
+      ],
+      "id": "ccbb60e7-3c0f-4d8c-b3f9-e97cbf6280ad",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b8fb757-c4b9-4ab9-a1ab-a4867baa3017",
+              "name": "Telegram",
+              "value": "={{ $json.toJsonString() }}",
+              "type": "object"
+            },
+            {
+              "id": "07d5e9ed-53ce-4205-83e8-48f7418bb685",
+              "name": "context",
+              "value": "={{ $workflow }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        1392
+      ],
+      "id": "c4c05740-0714-449c-9441-0e8d441c7691",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me",
+      "typeVersion": 1,
+      "position": [
+        832,
+        1328
+      ],
+      "id": "9962c20a-5440-4484-88d0-d2aef56baa24",
+      "placeholder": true
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        1488
+      ],
+      "id": "d09b01ff-c8b0-4f0e-a31d-9e8eb6bbe9f8",
+      "name": "Send Error",
+      "webhookId": "04036b24-28be-4751-8140-ae6ce1693636",
+      "credentials": {
+        "telegramApi": {
+          "id": "CHy32GLjBowjOJ3I",
+          "name": "Telegram account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Parent Workflow (Implementation Mockup)",
+        "height": 384,
+        "width": 1312,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        1264
+      ],
+      "typeVersion": 1,
+      "id": "e54f467b-28a0-4243-9dfa-3e8178db2351",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Authentication Sub-Workflow (Gatekeeper)",
+        "height": 1120,
+        "width": 1312,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "35040857-0c12-4a97-ad25-cc3c0cb2cb1f",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Telegram Bot Authentication System\n\nThis template contains two distinct components: a reusable authentication sub-workflow and an example parent workflow.\n\n## 1. Authentication Sub-Workflow (Gatekeeper)\nThis is a microservice designed to validate Telegram users against a Supabase database before allowing access to a premium bot.\n* **Input:** Expects a `Telegram` payload and workflow `context` (ID) from the parent workflow.\n* **Process:** Queries the database using the user's Telegram ID. Evaluates their `status` (approved, pending, rejected), `is_locked` state, and `allowed_workflows`.\n* **Output:** Returns a structured JSON response containing `is_authorized` (boolean) and a localized `message` string.\n* **Setup:** Update the `bot_username` variable in the \"Set User Preferences\" node to match your dedicated onboarding/auth bot.\n\n## 2. Parent Workflow (Implementation Mockup)\nThis demonstrates how to protect your main AI agents using the authentication gatekeeper. \n* **Trigger:** Receives the standard Telegram user message.\n* **Data Prep:** Maps the incoming payload and workflow context to send to the sub-workflow.\n* **Validation:** An `If` node evaluates the `is_authorized` boolean returned by the gatekeeper.\n* **Unauthorized Route (`true` branch):** Automatically sends the pre-formatted status message (e.g., pending, locked, unregistered) back to the user via Telegram.\n* **Authorized Route (`false` branch):** Routes to the placeholder. **Action Required:** Delete the \"Replace Me\" node and build your actual AI agent logic here.\n\n##Database Schema\n\n```\n-- 1. Create the ENUMs for strict control\nCREATE TYPE access_status AS ENUM ('pending', 'approved', 'rejected');\nCREATE TYPE user_role AS ENUM ('admin', 'viewer', 'client');\n\n-- 2. Create the primary users table\nCREATE TABLE users (\n  telegram_id BIGINT PRIMARY KEY,\n  username TEXT UNIQUE, \n  full_name TEXT NOT NULL,\n  reason_for_access TEXT,\n  status access_status DEFAULT 'pending',\n  allowed_workflows TEXT[] DEFAULT '{}',\n  metadata JSONB DEFAULT '{}'::jsonb,\n  is_locked BOOLEAN DEFAULT FALSE,\n  role user_role DEFAULT 'client',\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n```",
+        "height": 1568,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1200,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "b266bd92-88e7-426e-bdb9-c8cabc22742f",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        1328
+      ],
+      "id": "e2fce1ac-51ae-4025-a606-5acbf45f5652",
+      "name": "Welcome message",
+      "webhookId": "04036b24-28be-4751-8140-ae6ce1693636",
+      "credentials": {
+        "telegramApi": {
+          "id": "CHy32GLjBowjOJ3I",
+          "name": "Telegram account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8c7f56a1-1234-4567-b890-a1b2c3d4e5f6",
+              "name": "is_authorized",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "d2a3b4c5-5678-4901-c234-e5f6a7b8c9d0",
+              "name": "role",
+              "value": "={{ $('Get a row').item.json.role }}",
+              "type": "string"
+            },
+            {
+              "id": "e5f6a7b8-9012-4345-d678-f9a0b1c2d3e4",
+              "name": "is_locked",
+              "value": "={{ $('Get a row').item.json.is_locked }}",
+              "type": "boolean"
+            },
+            {
+              "id": "f9a0b1c2-3456-4789-e012-a3b4c5d6e7f8",
+              "name": "message",
+              "value": "={{ $('Set User Preferences').item.json.lan == 'ar' ? '✅ **أهلاً بك يا ' + $('Get a row').item.json.full_name.split(' ')[0] + '!** حسابك موثق ومصرح لك بالاستخدام. كيف يمكنني مساعدتك اليوم؟' : '✅ **Welcome back, ' + $('Get a row').item.json.full_name.split(' ')[0] + '!** You are authorized. How can I help you today?' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        704,
+        160
+      ],
+      "id": "791ce1d7-1349-418b-8f51-6c456200d5bd",
+      "name": "Set Authorized Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set User Preferences": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set User Preferences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Set Authorized Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Workflow Not Allowed Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Locked Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Pending Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Rejected Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Fallback Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Welcome message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Me": {
+      "main": [
+        []
+      ]
+    },
+    "Welcome message": {
+      "main": [
+        [
+          {
+            "node": "Replace Me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1a5c0893-d7e0-4089-8e0d-d42dcc7137a5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "64ab86774cb2c59d2c3c00fffeaed527e13724a09d0d1643a745ff6162492585"
+  },
+  "nodeGroups": [],
+  "id": "JelS421aBmdJ7wAW",
+  "tags": []
+}
