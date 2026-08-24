@@ -1,0 +1,667 @@
+{
+  "name": "Telegram AI Community Manager",
+  "nodes": [
+    {
+      "parameters": {
+        "inputText": "={{ $('Extract Message Context').item.json.replyText }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Inappropriate",
+              "description": "Contains bad words, insults, hate speech, spam, scams, political arguments, or discusses prohibited subjects like gambling, drugs, and weapons."
+            },
+            {
+              "category": "Safe",
+              "description": "Normal conversation, harmless text, or a false report by a user."
+            }
+          ]
+        },
+        "options": {
+          "fallback": "discard"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        -160
+      ],
+      "id": "63bae46f-03fd-403d-9daf-0d7cb45bbb15",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "jsCode": "const BOT_USERNAME = 'zaidinfo_bot'.toLowerCase();\n\nconst output = [];\n\nfor (const item of $input.all()) {\n  const msg = item.json.message || item.json.channel_post || item.json;\n  const text = msg.text || msg.caption || '';\n  \n  // 1. Reply / Quote Detection\n  const replyTo = msg.reply_to_message || null;\n  const quote = msg.quote || null; \n  const externalReply = msg.external_reply || null;\n\n  let replyText = null;\n  if (quote && quote.text) {\n    replyText = quote.text;\n  } else if (replyTo) {\n    replyText = replyTo.text || replyTo.caption || null;\n  }\n\n  // 2. Mention & Command Detection\n  let isBotMentioned = text.toLowerCase().includes(`@${BOT_USERNAME}`);\n  const entities = msg.entities || msg.caption_entities || [];\n  if (!isBotMentioned && entities.length > 0) {\n    isBotMentioned = entities.some(e => \n      (e.type === 'mention' || e.type === 'bot_command') && \n      text.substring(e.offset, e.offset + e.length).toLowerCase().includes(BOT_USERNAME)\n    );\n  }\n\n  const hasReportCommand = text.toLowerCase().includes('/report');\n  const isReply = replyTo !== null || quote !== null || externalReply !== null;\n  const isReport = isBotMentioned && isReply && hasReportCommand;\n\n  // --- UPDATED: Question Detection & Cleanup ---\n  // A question is any message mentioning the bot that is NOT a report\n  const isQuestion = isBotMentioned && !isReport;\n  \n  let questionText = null;\n  if (isQuestion) {\n    questionText = text\n      .replace(new RegExp(`@${BOT_USERNAME}`, 'gi'), '') // Removes the bot mention\n      .trim(); // Cleans up extra spaces\n  }\n\n  // 3. Offender Info (Mike)\n  let offenderId = null, offenderName = null, offenderUsername = null;\n  if (replyTo && replyTo.from) {\n    offenderId = replyTo.from.id;\n    offenderName = replyTo.from.first_name;\n    offenderUsername = replyTo.from.username;\n  } else if (externalReply && externalReply.origin && externalReply.origin.sender_user) {\n    offenderId = externalReply.origin.sender_user.id;\n    offenderName = externalReply.origin.sender_user.first_name;\n    offenderUsername = externalReply.origin.sender_user.username;\n  }\n\n  // 4. New Member Detection\n  const newMembers = msg.new_chat_members || (msg.new_chat_participant ? [msg.new_chat_participant] : []);\n  const isNewMember = newMembers.length > 0;\n  \n  const firstNewMember = isNewMember ? newMembers[0] : null;\n  const newMemberId = firstNewMember ? firstNewMember.id : null;\n  const newMemberName = firstNewMember \n    ? `${firstNewMember.first_name || ''} ${firstNewMember.last_name || ''}`.trim() \n    : null;\n  const newMemberUsername = firstNewMember ? firstNewMember.username || null : null;\n  const isNewMemberBot = firstNewMember ? Boolean(firstNewMember.is_bot) : false;\n\n  // 5. Final Output Object\n  output.push({\n    json: {\n      // Logic Flags\n      isBotMentioned: isBotMentioned,\n      isReply: isReply,\n      hasReportCommand: hasReportCommand,\n      isReport: isReport,\n      isNewMember: isNewMember,\n      isQuestion: isQuestion,\n\n      // Messages\n      messageText: text,\n      replyText: replyText,\n      questionText: questionText,\n\n      // Reporter Details\n      reporterId: msg.from ? msg.from.id : null,\n      reporterName: msg.from ? msg.from.first_name : null,\n      reporterUsername: msg.from ? msg.from.username : null,\n\n      // Offender Details\n      offenderId: offenderId,\n      offenderName: offenderName,\n      offenderUsername: offenderUsername,\n\n      // New Member Details\n      newMemberId: newMemberId,\n      newMemberName: newMemberName,\n      newMemberUsername: newMemberUsername,\n      isNewMemberBot: isNewMemberBot,\n\n      // Chat & Identifiers\n      chatId: msg.chat ? msg.chat.id : null,\n      messageId: msg.message_id || null,\n      replyMessageId: replyTo ? replyTo.message_id : null\n    }\n  });\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "edc3c765-a9cd-4f04-9a7d-d00bb4b4ef20",
+      "name": "Extract Message Context"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4d229bd6-3471-433e-b4d8-c45300a08ccd",
+              "name": "lan",
+              "value": "ar",
+              "type": "string"
+            },
+            {
+              "id": "b9bc570a-a93e-4db5-9e29-c95a9ff1d736",
+              "name": "admin_username",
+              "value": "@zaidrad49",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        464,
+        0
+      ],
+      "id": "dc189983-259f-4b67-871c-604c7b62786c",
+      "name": "Set User Preferences"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Extract Message Context').item.json.chatId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        1152,
+        320
+      ],
+      "id": "aa9be0dd-9256-4f00-b70e-eb6527428e88",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extract Message Context').item.json.questionText }}",
+        "options": {
+          "systemMessage": "You are a helpful assistant"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        992,
+        96
+      ],
+      "id": "4226b130-5fc3-4a06-ba60-37d45aa7ae82",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "list",
+          "cachedResultName": "n8n-gemini-app"
+        },
+        "modelName": "gemini-3.7-flash",
+        "options": {
+          "maxOutputTokens": 2048,
+          "safetySettings": {
+            "values": [
+              {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_ONLY_HIGH"
+              },
+              {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_ONLY_HIGH"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        992,
+        320
+      ],
+      "id": "6ac7c346-b172-43b1-be54-ed7ca72201a7",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "63OfYBxofY57tTx4",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Extract Message Context').item.json.isReport }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "e3610ad4-2bd2-41ba-9bd0-7cca00a6b50a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Report"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Extract Message Context').item.json.isQuestion }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "7bf56e49-2fd0-4a4f-8df0-40d4ec2933e2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Question"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Extract Message Context').item.json.isNewMember }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "ebc47230-2caa-4734-a7b7-5469ad0b8d6b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "New Member"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9b3ebd85-60bb-4f77-a2fc-6fef27424884",
+      "name": "Route by Action Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        672,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "110c6213-0409-491a-91d4-6f5b2bb29b95",
+              "leftValue": "={{ $('Extract Message Context').item.json.isNewMemberBot }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        992,
+        512
+      ],
+      "id": "e055ac83-e0da-4753-a0f1-e5a024a1f915",
+      "name": "Is bot?"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -320,
+        16
+      ],
+      "id": "4855d902-7a9a-4ff8-ab00-bb9bd852a124",
+      "name": "Telegram Trigger",
+      "webhookId": "9acdf013-bbcc-4414-873f-b57b78b5f91c",
+      "credentials": {
+        "telegramApi": {
+          "id": "C2pXCdmsl57tAD5R",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Extract Message Context').item.json.chatId }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $json.lan == 'ar' ? `👋 أهلاً بك في المجموعة، [${ $json.newMemberName }](tg://user?id=${ $json.newMemberId })!\n\nللحفاظ على مجتمعنا مفيداً وآمناً، يرجى ملاحظة:\n* **طرح الأسئلة:** قم بالإشارة للبوت (@zaidinfo_bot) ثم اكتب سؤالك للحصول على مساعدة الذكاء الاصطناعي.\n* **الإبلاغ عن المشاكل:** قم بالرد على أي رسالة غير لائقة بـ \\`/report\\` ليتم مراجعتها من قبل المشرفين.\n\nنتمنى لك وقتاً ممتعاً!` : `👋 Welcome to the group, [${ $json.newMemberName }](tg://user?id=${ $json.newMemberId })!\n\nTo keep this community helpful and safe, please note:\n* **Ask Questions:** Just mention the bot (@zaidinfo_bot) followed by your message to get AI assistance.\n* **Report Issues:** Reply to any inappropriate message with \\`/report\\` to flag it for moderation.\n\nEnjoy your stay!` }}",
+        "additionalFields": {
+          "is_rtl": "={{ $('Set User Preferences').item.json.lan===\"ar\"? true : flase }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        496
+      ],
+      "id": "69481639-c339-4d62-a9cd-20d94a9d889d",
+      "name": "Send Welcome Message",
+      "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
+      "credentials": {
+        "telegramApi": {
+          "id": "C2pXCdmsl57tAD5R",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Extract Message Context').item.json.chatId }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        96
+      ],
+      "id": "d10c5150-0e47-487c-835b-f4673f8ee3bb",
+      "name": "Send AI Response",
+      "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
+      "credentials": {
+        "telegramApi": {
+          "id": "C2pXCdmsl57tAD5R",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteMessage",
+        "chatId": "={{ $('Extract Message Context').item.json.chatId }}",
+        "messageId": "={{ $('Extract Message Context').item.json.replyMessageId }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        -512
+      ],
+      "id": "e7be090f-dae6-45cc-8f82-8f0f5d97e7ac",
+      "name": "Delete Inappropriate Message",
+      "webhookId": "cbce1c51-2d7d-4e45-9e2a-d036dd5d7719",
+      "credentials": {
+        "telegramApi": {
+          "id": "C2pXCdmsl57tAD5R",
+          "name": "Telegram account 6"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Extract Message Context').item.json.chatId }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $('Set User Preferences').item.json.lan == 'ar' ? `🛡️ *تم حذف رسالة من [${ $json.offenderName }](tg://user?id=${ $json.offenderId }) بواسطة البوت لمخالفتها إرشادات المجتمع.*` : `🛡️ *A message from [${ $json.offenderName }](tg://user?id=${ $json.offenderId }) was deleted by the bot for violating community guidelines.*` }}",
+        "additionalFields": {
+          "is_rtl": "={{ $('Set User Preferences').item.json.lan===\"ar\"? true : flase }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        -512
+      ],
+      "id": "e24b3b28-ea69-4cfc-bc10-4428ef67ebaa",
+      "name": "Send Public Deletion Notice",
+      "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
+      "credentials": {
+        "telegramApi": {
+          "id": "C2pXCdmsl57tAD5R",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Extract Message Context').item.json.offenderId }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $('Set User Preferences').item.json.lan == 'ar' ? `👋 مرحباً ${ $('Extract Message Context').item.json.offenderName }،\n\nتمت إزالة رسالتك الأخيرة لمخالفتها إرشادات المجتمع:\n> \"${ $('Extract Message Context').item.json.replyText }\"\n\nيرجى العلم أننا لا نسمح في هذه المجموعة بـ: الكلمات النابية، الإساءة، الرسائل المزعجة، الاحتيال، النقاشات السياسية، أو المواضيع المحظورة (مثل المقامرة والمخدرات). \n\nإذا كنت تعتقد أن هذا الإجراء تم بالخطأ، يرجى التواصل مع المشرف: @zaidr49` : `👋 Hi ${ $('Extract Message Context').item.json.offenderName },\n\nYour recent message was removed for violating our community guidelines:\n> \"${ $('Extract Message Context').item.json.replyText }\"\n\nPlease note that we do not allow: hostile language, hate speech, spam, scams, political arguments, or discussions about restricted items (like gambling and drugs).\n\nIf you believe this was a mistake, please contact the admin: @zaidr49` }}",
+        "additionalFields": {
+          "is_rtl": "={{ $('Set User Preferences').item.json.lan===\"ar\"? true : flase }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1904,
+        -512
+      ],
+      "id": "70e04f35-5c37-48b8-9f71-fc4e2e80262b",
+      "name": "Send Warning to Offender",
+      "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
+      "credentials": {
+        "telegramApi": {
+          "id": "C2pXCdmsl57tAD5R",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Extract Message Context').item.json.reporterId }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $('Set User Preferences').item.json.lan == 'ar' ? `👋 مرحباً ${ $('Extract Message Context').item.json.reporterName }،\n\nشكراً لاهتمامك وحرصك على المجموعة! قمنا بمراجعة الرسالة التي أبلغت عنها، ولكنها لا تخالف قوانيننا الحالية.\n\nيرجى استخدام ميزة الإبلاغ للحالات الحقيقية فقط. إذا كنت متأكداً من وجود مشكلة، يمكنك التواصل مع المشرف مباشرة: @zaidr49` : `👋 Hi ${ $('Extract Message Context').item.json.reporterName },\n\nThank you for looking out for the group! We reviewed the message you reported, but it does not appear to violate our current rules. \n\nPlease use the report feature carefully for genuine issues. If you strongly believe this is a mistake, you can contact the admin directly:$('Set User Preferences').item.json.lan` }}",
+        "additionalFields": {
+          "is_rtl": "={{ $('Set User Preferences').item.json.lan===\"ar\"? true : flase }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        -144
+      ],
+      "id": "e2cee768-a3d0-4b6b-b807-2d27a7f9020b",
+      "name": "Notify Reporter (Safe)",
+      "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
+      "credentials": {
+        "telegramApi": {
+          "id": "C2pXCdmsl57tAD5R",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "59451dd6-6a40-4574-9a12-7fcbcb089325",
+              "leftValue": "={{ $json.message.chat.title }}",
+              "rightValue": "Test Group",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        16
+      ],
+      "id": "87ffe5e6-33ba-46d3-b387-a4717813171b",
+      "name": "Is group message"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Delete Inappropriate Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Reporter (Safe)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Message Context": {
+      "main": [
+        [
+          {
+            "node": "Set User Preferences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set User Preferences": {
+      "main": [
+        [
+          {
+            "node": "Route by Action Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action Type": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is bot?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is bot?": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Is group message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Inappropriate Message": {
+      "main": [
+        [
+          {
+            "node": "Send Public Deletion Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Public Deletion Notice": {
+      "main": [
+        [
+          {
+            "node": "Send Warning to Offender",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Warning to Offender": {
+      "main": [
+        []
+      ]
+    },
+    "Is group message": {
+      "main": [
+        [
+          {
+            "node": "Extract Message Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c3c2f4d1-64eb-4049-a30c-5d100b6d286b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "64ab86774cb2c59d2c3c00fffeaed527e13724a09d0d1643a745ff6162492585"
+  },
+  "nodeGroups": [],
+  "id": "WBzUlMFfsiKY7kN0",
+  "tags": []
+}
