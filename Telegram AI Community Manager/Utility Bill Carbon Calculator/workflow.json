@@ -1,0 +1,285 @@
+{
+  "name": "Utility Bill Carbon Calculator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "86c60ff3-b73a-4884-96ca-f5ddd7c381af",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1056,
+        80
+      ],
+      "id": "adca8bc4-7201-4172-b09c-e0b415c97635",
+      "name": "Webhook",
+      "webhookId": "86c60ff3-b73a-4884-96ca-f5ddd7c381af"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "n8n-gemini-app-500118",
+          "mode": "list",
+          "cachedResultName": "n8n-gemini-app"
+        },
+        "modelName": "gemini-3.7-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        320
+      ],
+      "id": "311f099f-0542-4cca-b207-62a93cc4ca58",
+      "name": "Google Vertex Chat Model",
+      "credentials": {
+        "googleApi": {
+          "id": "63OfYBxofY57tTx4",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $binary }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a strict, highly accurate AI Data Extraction Auditor for corporate ESG (Environmental, Social, and Governance) reporting. \n\nYour task is to analyze the attached invoice, receipt, or bill and extract the consumption data. The document will typically be one of three types: Electricity, Water, or Fuel (Gas Station).\n\nEXTRACTION RULES:\n1. Scan for Electricity: Look for keywords like \"Electricity\", \"Consumption\", and units in \"kWh\". (This is Scope 2).\n2. Scan for Water: Look for keywords like \"Water\", \"Water Consumption\", and units in \"IG\" (Imperial Gallons), \"Gallons\", or \"m3\". (This is Scope 3).\n3. Scan for Fuel: Look for keywords like \"Petrol\", \"Super 98\", \"Special 95\", \"Diesel\", and units in \"L\", \"Liters\", or \"Litres\". (This is Scope 1). Ignore food/store items on the receipt.\n4. If a bill contains multiple types (e.g., a DEWA bill with both electricity and water), extract ALL of them into separate objects.\n\nOUTPUT FORMAT:\nYou must return ONLY a raw JSON array of objects. Do not wrap the JSON in markdown formatting (no ```json). Do not add any conversational text.\n\n[\n  {\n    \"type\": \"electricity\", \n    \"value\": 1500,\n    \"unit\": \"kWh\",\n    \"scope\": \"Scope 2\"\n  },\n  {\n    \"type\": \"water\",\n    \"value\": 6000,\n    \"unit\": \"IG\",\n    \"scope\": \"Scope 3\"\n  }\n]\n5. If consumption data (kWh, m3, liters, IG) is NOT clearly stated on the document, but a total amount paid IS visible, extract that instead:\n   {\n     \"type\": \"fuel\",  // or electricity/water\n     \"value\": <amount>,\n     \"unit\": \"money\",\n     \"currency\": \"AED\",  // ISO code, infer from context (country, symbol) if not explicit\n     \"scope\": \"Scope 1\"\n   }",
+          "passthroughBinaryImages": true,
+          "passthroughBinaryPdfs": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -832,
+        80
+      ],
+      "id": "8b8221ca-bdd4-4f74-b13c-dfbe2211f2b5",
+      "name": "AI Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Run Once for All Items mode\n\nfunction normalizeVolumeUnit(unit) {\n  const map = {\n    'l': 'l', 'liter': 'l', 'liters': 'l', 'litre': 'l', 'litres': 'l',\n    'ml': 'ml', 'milliliter': 'ml', 'milliliters': 'ml',\n    'm3': 'm3', 'cubic meter': 'm3', 'cubic meters': 'm3', 'cbm': 'm3',\n    'cubic foot': 'cubic_foot', 'cubic feet': 'cubic_foot', 'ft3': 'cubic_foot',\n    'gallon': 'gallon_us', 'gallons': 'gallon_us', 'gal': 'gallon_us', 'us gallon': 'gallon_us',\n    'ig': 'gallon_us', // imperial gallons: no native support, mapped to US gallons as nearest fallback\n    'bbl': 'bbl', 'barrel': 'bbl', 'barrels': 'bbl'\n  };\n  return map[unit.toLowerCase().trim()] || unit.toLowerCase().trim();\n}\n\nfunction normalizeEnergyUnit(unit) {\n  const map = {\n    'kwh': 'kWh', 'kw h': 'kWh', 'kilowatt hour': 'kWh', 'kilowatt hours': 'kWh',\n    'mwh': 'MWh', 'wh': 'Wh', 'gj': 'GJ', 'mj': 'MJ', 'btu': 'Btu'\n  };\n  return map[unit.toLowerCase().trim()] || unit;\n}\n\nconst results = [];\n\nfor (let i = 0; i < $input.all().length; i++) {\n  const item = $input.all()[i];\n  let rawOutput = item.json.output;\n  let entries = [];\n\n  if (typeof rawOutput === 'string') {\n    try {\n      const parsed = JSON.parse(rawOutput);\n      entries = Array.isArray(parsed) ? parsed : (parsed.entries || []);\n    } catch (e) {\n      entries = [];\n    }\n  } else if (rawOutput && Array.isArray(rawOutput.entries)) {\n    entries = rawOutput.entries;\n  } else if (Array.isArray(rawOutput)) {\n    entries = rawOutput;\n  }\n\n  let fileName = \"unknown\";\n  try {\n    fileName = $('Split Files').itemMatching(i).json.fileName;\n  } catch (e) {}\n\n  for (const entry of entries) {\n    let activityId = \"\";\n    let parameters = {};\n\n    if (entry.type === \"electricity\") {\n      activityId = \"electricity-supply_grid-source_residual_mix\";\n      parameters = { energy: entry.value, energy_unit: normalizeEnergyUnit(entry.unit) };\n    } else if (entry.type === \"water\") {\n      activityId = \"water_supply-type_na\";\n      parameters = { volume: entry.value, volume_unit: normalizeVolumeUnit(entry.unit) };\n    } else if (entry.type === \"fuel\") {\n      activityId = \"fuel-type_motor_gasoline-fuel_use_na\";\n      parameters = { volume: entry.value, volume_unit: normalizeVolumeUnit(entry.unit) };\n    }\n\n    results.push({\n      json: {\n        sourceFile: fileName,\n        emission_factor: { activity_id: activityId, data_version: \"^37\" },\n        parameters: parameters\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        -16
+      ],
+      "id": "3902ade3-3494-4317-833e-b601512441c0",
+      "name": "Format for Climatiq"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.climatiq.io/data/v1/estimate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        -16
+      ],
+      "id": "1725103c-2395-4266-9e43-e079a1218943",
+      "name": "Climatiq API Calculation",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "hxZdL161wd2LJrxJ",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"entries\": [\n    {\n      \"type\": \"electricity\",\n      \"value\": 1500,\n      \"unit\": \"kWh\"\n    },\n    {\n      \"type\": \"water\",\n      \"value\": 4500,\n      \"unit\": \"IG\"\n    },\n    {\n      \"companey_name\": \"CRD\",\n      \"type\": \"fuel\",\n      \"value\": 60,\n      \"unit\": \"money\",\n      \"currency\": \"jod\",\n      \"amount\": 100\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -688,
+        320
+      ],
+      "id": "442fe859-3366-4520-aa9f-f4dd333a2082",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        192,
+        -16
+      ],
+      "id": "869c5bbe-fff2-4089-a651-a14886f9419c",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retrieve the original parsed array from the AI Agent node\n// Ensure the node name exactly matches your workflow ('Structured Output Parser' or 'AI Agent')\nconst aiOutput = $('AI Agent').first().json.output || $('Structured Output Parser').first().json;\nconst aiEntries = Array.isArray(aiOutput) ? aiOutput : (aiOutput.entries || []);\n\n// Map over the Climatiq API responses\nreturn $input.all().map((item, index) => {\n  const apiData = item.json;\n  \n  // Match the API response with the corresponding AI entry by index\n  const originalAiData = aiEntries[index] || {};\n\n  return {\n    json: {\n      type: originalAiData.type || \"unknown\",\n      company_name: originalAiData.companey_name || \"Unknown\",\n      consumption_value: apiData.activity_data.activity_value,\n      consumption_unit: apiData.activity_data.activity_unit,\n      cost_amount: originalAiData.amount || null,\n      currency: originalAiData.currency || null,\n      total_co2e: parseFloat(apiData.co2e.toFixed(2)), // Rounds to 2 decimal places\n      co2e_unit: apiData.co2e_unit,\n      emission_region: apiData.emission_factor.region\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -16
+      ],
+      "id": "58fd829b-f2ce-4ff1-a469-c161e78ff3e7",
+      "name": "Clean & Merge Data"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -480,
+        176
+      ],
+      "id": "54663904-f7ee-412d-bcfa-2a2ff107da5e",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "content": "## CarbonFlow ESG Data Extraction\n\nThis workflow processes utility bills (electricity, water, fuel) using an AI Agent to extract consumption data and calculates total CO2e emissions via the Climatiq API. It automatically handles physical units and uses spend-based fallbacks (e.g., JOD) when consumption volume is missing.\n\n**Frontend Dashboard**\nIf you are looking for the user interface that connects to this workflow, you can find the repository here: \n[GitHub - ZaidAR49/CarbonFlow](https://github.com/ZaidAR49/CarbonFlow)",
+        "height": 368,
+        "width": 448
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1056,
+        -384
+      ],
+      "typeVersion": 1,
+      "id": "4586e667-7b51-4977-84de-569cede6ff80",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Vertex Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format for Climatiq",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Climatiq": {
+      "main": [
+        [
+          {
+            "node": "Climatiq API Calculation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Climatiq API Calculation": {
+      "main": [
+        [
+          {
+            "node": "Clean & Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean & Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "efa1bda8-ba28-41df-8ed5-b1a2b71e9a04",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "64ab86774cb2c59d2c3c00fffeaed527e13724a09d0d1643a745ff6162492585"
+  },
+  "nodeGroups": [],
+  "id": "u3GKR7dgXhZaKvHZ",
+  "tags": []
+}
