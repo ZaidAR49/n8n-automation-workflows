@@ -1,4 +1,5 @@
 {
+  "name": "LinkedIn DeepSight Pipeline",
   "nodes": [
     {
       "parameters": {
@@ -10,16 +11,16 @@
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.5,
       "position": [
-        -64,
-        144
+        -816,
+        544
       ],
-      "id": "cfd2648d-7ed3-4b32-831c-4eab11c88d7e",
+      "id": "4329c0a7-4200-4f51-ad0d-bdf6e21c5ac3",
       "name": "Telegram Trigger",
       "webhookId": "63103598-ffb9-4389-b3dc-8ca6c61b2b58",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -37,15 +38,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
       "typeVersion": 1,
       "position": [
-        -160,
-        656
+        -912,
+        1056
       ],
-      "id": "cc26cdc9-6426-452e-8c2d-83251e726474",
+      "id": "7c74a77a-4eb7-4455-921a-5a0eaa016e3e",
       "name": "Google Vertex Chat Model",
       "credentials": {
         "googleApi": {
-          "id": "taJiZniL8M15zSeH",
-          "name": "Google Service Account account 3"
+          "id": "gqHlBBUnZX3ftiIX",
+          "name": "Google Service Account account"
         }
       }
     },
@@ -132,10 +133,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        560,
-        128
+        -192,
+        528
       ],
-      "id": "4b04be2b-2b5c-42a3-9296-b07d5240e9cd",
+      "id": "aad4d14d-0d8e-430b-978b-81f0b5f9446b",
       "name": "Switch"
     },
     {
@@ -152,15 +153,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
       "typeVersion": 1,
       "position": [
-        1088,
-        640
+        336,
+        1040
       ],
-      "id": "6beee4c0-8af4-4c6e-8b92-8a63a606ab10",
+      "id": "0fa28fc2-7bc0-4208-8dd6-af8ec937d5f9",
       "name": "Google Vertex Chat Model1",
       "credentials": {
         "googleApi": {
-          "id": "taJiZniL8M15zSeH",
-          "name": "Google Service Account account 3"
+          "id": "gqHlBBUnZX3ftiIX",
+          "name": "Google Service Account account"
         }
       }
     },
@@ -173,10 +174,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
       "position": [
-        1184,
-        640
+        432,
+        1040
       ],
-      "id": "e4693586-d456-4e41-8ba9-c551a815373c",
+      "id": "1b7e83d1-987e-429b-ba85-25d7838ad002",
       "name": "Simple Memory"
     },
     {
@@ -186,10 +187,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        336,
-        400
+        -416,
+        800
       ],
-      "id": "f09c4432-dc58-45b3-95ca-6fe238eb6ccc",
+      "id": "bf568dcb-3065-4d80-a566-d57a9ab3fd95",
       "name": "To HTML"
     },
     {
@@ -199,10 +200,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        256,
-        144
+        -496,
+        544
       ],
-      "id": "cb93a5d9-8b55-4e70-8552-b22acdf435ed",
+      "id": "b818222f-839e-4fd4-bed4-5c0e516a53b4",
       "name": "Check URL & Determine Route"
     },
     {
@@ -216,16 +217,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        816,
-        144
+        64,
+        544
       ],
-      "id": "ac35a461-8cdc-4a56-8c9a-aeb3d27b778d",
+      "id": "7637a363-59b0-4d64-8996-e9ee13c1270c",
       "name": "Send \"Scraping Started\" Notice",
       "webhookId": "5c70a859-3065-4690-865d-3c3b710ec0b2",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -242,18 +243,12 @@
       "type": "@apify/n8n-nodes-apify.apify",
       "typeVersion": 1,
       "position": [
-        1024,
-        144
+        272,
+        544
       ],
-      "id": "fa50c14a-050a-428d-ac5b-e5509e91718e",
+      "id": "12b97ca4-d027-48a0-be30-bdd5f60b0475",
       "name": "Scrape LinkedIn (Apify)",
       "retryOnFail": true,
-      "credentials": {
-        "apifyApi": {
-          "id": "YytRFWh0vMfXf0fY",
-          "name": "Apify account"
-        }
-      },
       "onError": "continueErrorOutput"
     },
     {
@@ -263,10 +258,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1264,
-        128
+        512,
+        528
       ],
-      "id": "78eee621-3882-441c-a1a6-455624c0ecb0",
+      "id": "03f2daf6-45d3-416c-9a99-9d4369b6990a",
       "name": "Bundle Posts into Single Array"
     },
     {
@@ -280,16 +275,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1520,
-        128
+        768,
+        528
       ],
-      "id": "affc0f2f-e134-40d1-94c9-e03182a5b4c1",
+      "id": "def4b626-f4d0-4346-b1d6-e84c0a9ab8ac",
       "name": "Send \"AI Analysis Started\" Notice",
       "webhookId": "bfc022b4-daec-4542-b670-e89a84a6f74e",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -305,10 +300,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        -64,
-        416
+        -816,
+        816
       ],
-      "id": "15b62e13-22a7-41d2-882e-74879b54ec08",
+      "id": "dee0e9cf-0cae-4323-a273-0af25738467a",
       "name": "AI: Analyze Posts & Build Dashboard",
       "executeOnce": false,
       "retryOnFail": true,
@@ -324,16 +319,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        560,
-        400
+        -192,
+        800
       ],
-      "id": "83d158bc-5706-47c0-b3c0-c9972071f09b",
+      "id": "f475cda2-e43c-40d2-a1c7-681a47ccdc7e",
       "name": "Send HTML Dashboard to User",
       "webhookId": "d0a0efd8-3680-4e8b-8c26-9b895373c8b5",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -344,10 +339,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
-        400
+        48,
+        800
       ],
-      "id": "d0603e30-45db-4a88-b1db-deae3e6a0156",
+      "id": "b497b453-5b6c-4bdd-874b-12c6d978648d",
       "name": "Extract Saved Post Data"
     },
     {
@@ -361,10 +356,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        1088,
-        400
+        336,
+        800
       ],
-      "id": "9fceaaec-9787-4740-ab00-22795cd354fc",
+      "id": "2059142d-ca25-4570-a7f5-9ab3b9c8951e",
       "name": "AI: Answer Follow-up Question",
       "executeOnce": true,
       "retryOnFail": true,
@@ -379,16 +374,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1520,
-        384
+        768,
+        784
       ],
-      "id": "bb34aac0-8d9b-4bc3-bbfe-95149896104f",
+      "id": "80be6000-cf0c-4fd4-bb6b-667585a7d4f3",
       "name": "Send Answer to User",
       "webhookId": "d0a0efd8-3680-4e8b-8c26-9b895373c8b5",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -403,16 +398,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        848,
-        -144
+        96,
+        256
       ],
-      "id": "b4fa632a-c37a-4ecb-9e06-7a52d8b00081",
+      "id": "a00a6f24-4174-4d3e-802b-d5aa640e12c5",
       "name": "Send \"Invalid URL\" Warning",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -427,16 +422,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1184,
-        -112
+        432,
+        288
       ],
-      "id": "0c5ac394-12c0-43f4-badb-4eeabdcf19cd",
+      "id": "12ee649d-fb96-4983-af3b-3d2ed94e9e16",
       "name": "Apify Error",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -451,16 +446,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        336,
-        624
+        -416,
+        1024
       ],
-      "id": "416e8724-3590-420a-a969-9204875ef68f",
+      "id": "36f5f0bf-de5f-42fc-8910-f35d718aa09c",
       "name": "Send \"Analysis Error\" Alert",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -475,16 +470,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1552,
-        672
+        800,
+        1072
       ],
-      "id": "673482e3-1222-4a58-a26e-0a585296be89",
+      "id": "6b87ba48-d59d-4cea-b91c-47ea9f92cdc4",
       "name": "Send \"Answer Error\" Message",
       "webhookId": "7702ea6f-22b1-4212-bf62-72668bc0a911",
       "credentials": {
         "telegramApi": {
-          "id": "ukGJjo1Ae5kCi4Ra",
-          "name": "Telegram account"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -495,13 +490,29 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        80,
-        656
+        -672,
+        1056
       ],
-      "id": "61a788ca-8a8f-4bd7-9875-c7df601643ce",
+      "id": "71f87936-db32-4928-b67e-aac5688d971f",
       "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "content": "# LinkedIn DeepSight Bot\n\nThis workflow powers a Telegram bot that scrapes LinkedIn profiles, generates AI-driven insights, and answers follow-up questions.\n\n## Core Flow\n1. **Trigger:** Receives user messages via Telegram.\n2. **Routing:** Determines if the input is a new LinkedIn URL, a follow-up question, or a `/reset` command.\n3. **Scraping:** Extracts profile posts and engagement metrics using Apify.\n4. **Primary Analysis:** A Gemini AI Agent processes the posts to generate a comprehensive HTML dashboard and a structured data array.\n5. **Delivery:** Sends the generated HTML report back to the user on Telegram.\n6. **Q&A Agent:** A secondary Gemini AI Agent with conversational memory answers follow-up questions based exclusively on the scraped data.",
+        "height": 416,
+        "width": 736
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -800,
+        32
+      ],
+      "typeVersion": 1,
+      "id": "06096b8c-056e-464a-a648-4ecb0781397c",
+      "name": "Sticky Note"
     }
   ],
+  "pinData": {},
   "connections": {
     "Telegram Trigger": {
       "main": [
@@ -715,9 +726,16 @@
       ]
     }
   },
-  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a7ed3787-b627-4a78-b0f8-cf0d7c695788",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "35bd7a4c88065a494e34786b7a0228cb82e951b0b38ac5fcc26fc4ad78f730ff"
-  }
+    "instanceId": "3e5f0f21cbbfb27a5a77459cdf3a08aeec2aeb55c9f15210c4daa721af225920"
+  },
+  "nodeGroups": [],
+  "id": "HKfh0Zmboax3IO46",
+  "tags": []
 }
