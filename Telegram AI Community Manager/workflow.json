@@ -23,10 +23,10 @@
       "type": "@n8n/n8n-nodes-langchain.textClassifier",
       "typeVersion": 1.1,
       "position": [
-        992,
-        -160
+        -544,
+        464
       ],
-      "id": "63bae46f-03fd-403d-9daf-0d7cb45bbb15",
+      "id": "a118569a-5118-4030-92eb-82bdce76c4ee",
       "name": "Text Classifier"
     },
     {
@@ -36,10 +36,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        224,
-        0
+        -1312,
+        624
       ],
-      "id": "edc3c765-a9cd-4f04-9a7d-d00bb4b4ef20",
+      "id": "e604fae3-02fd-4d47-acb7-2ece82df29f7",
       "name": "Extract Message Context"
     },
     {
@@ -65,10 +65,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.5,
       "position": [
-        464,
-        0
+        -1072,
+        624
       ],
-      "id": "dc189983-259f-4b67-871c-604c7b62786c",
+      "id": "a441cf25-389c-4ba6-9845-76b3464f60bf",
       "name": "Set User Preferences"
     },
     {
@@ -79,10 +79,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
       "position": [
-        1152,
-        320
+        -384,
+        944
       ],
-      "id": "aa9be0dd-9256-4f00-b70e-eb6527428e88",
+      "id": "a8b1fe12-296e-42e4-9efc-fedd3bd5f031",
       "name": "Simple Memory"
     },
     {
@@ -96,10 +96,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        992,
-        96
+        -544,
+        720
       ],
-      "id": "4226b130-5fc3-4a06-ba60-37d45aa7ae82",
+      "id": "75e4c430-a275-4fc8-a414-db0fb54b662b",
       "name": "AI Agent"
     },
     {
@@ -138,14 +138,14 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
       "typeVersion": 1,
       "position": [
-        992,
-        320
+        -544,
+        944
       ],
-      "id": "6ac7c346-b172-43b1-be54-ed7ca72201a7",
+      "id": "45de547f-c9ca-4ca9-80fa-9a6465f439bf",
       "name": "Google Vertex Chat Model",
       "credentials": {
         "googleApi": {
-          "id": "63OfYBxofY57tTx4",
+          "id": "gqHlBBUnZX3ftiIX",
           "name": "Google Service Account account"
         }
       }
@@ -233,13 +233,13 @@
         },
         "options": {}
       },
-      "id": "9b3ebd85-60bb-4f77-a2fc-6fef27424884",
+      "id": "e170b6a5-cd79-4341-b40e-dfbbbc3095a2",
       "name": "Route by Action Type",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
       "position": [
-        672,
-        -16
+        -864,
+        608
       ]
     },
     {
@@ -270,10 +270,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        992,
-        512
+        -544,
+        1136
       ],
-      "id": "e055ac83-e0da-4753-a0f1-e5a024a1f915",
+      "id": "9215981b-a9b2-415d-9b41-af5aba1afc7b",
       "name": "Is bot?"
     },
     {
@@ -286,16 +286,16 @@
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.5,
       "position": [
-        -320,
-        16
+        -1856,
+        640
       ],
-      "id": "4855d902-7a9a-4ff8-ab00-bb9bd852a124",
+      "id": "e30656f1-4f77-4235-85ba-20e8249424be",
       "name": "Telegram Trigger",
       "webhookId": "9acdf013-bbcc-4414-873f-b57b78b5f91c",
       "credentials": {
         "telegramApi": {
-          "id": "C2pXCdmsl57tAD5R",
-          "name": "Telegram account 6"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -312,16 +312,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1376,
-        496
+        -160,
+        1120
       ],
-      "id": "69481639-c339-4d62-a9cd-20d94a9d889d",
+      "id": "f8f16e75-fcea-460b-9273-8e30d1bdfef8",
       "name": "Send Welcome Message",
       "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
       "credentials": {
         "telegramApi": {
-          "id": "C2pXCdmsl57tAD5R",
-          "name": "Telegram account 6"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -336,16 +336,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1376,
-        96
+        -160,
+        720
       ],
-      "id": "d10c5150-0e47-487c-835b-f4673f8ee3bb",
+      "id": "9214e11f-09c2-464f-9c2f-30bbb38906df",
       "name": "Send AI Response",
       "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
       "credentials": {
         "telegramApi": {
-          "id": "C2pXCdmsl57tAD5R",
-          "name": "Telegram account 6"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -358,16 +358,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1392,
-        -512
+        -144,
+        112
       ],
-      "id": "e7be090f-dae6-45cc-8f82-8f0f5d97e7ac",
+      "id": "066c8b92-e0c9-4722-8afc-6ba8b46331d2",
       "name": "Delete Inappropriate Message",
       "webhookId": "cbce1c51-2d7d-4e45-9e2a-d036dd5d7719",
       "credentials": {
         "telegramApi": {
-          "id": "C2pXCdmsl57tAD5R",
-          "name": "Telegram account 6"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       },
       "onError": "continueRegularOutput"
@@ -385,16 +385,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1632,
-        -512
+        96,
+        112
       ],
-      "id": "e24b3b28-ea69-4cfc-bc10-4428ef67ebaa",
+      "id": "300e6a64-456d-478b-979a-e47bf7fc0e02",
       "name": "Send Public Deletion Notice",
       "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
       "credentials": {
         "telegramApi": {
-          "id": "C2pXCdmsl57tAD5R",
-          "name": "Telegram account 6"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -411,16 +411,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1904,
-        -512
+        368,
+        112
       ],
-      "id": "70e04f35-5c37-48b8-9f71-fc4e2e80262b",
+      "id": "18116186-9cc9-4493-99ea-cf62a11400d8",
       "name": "Send Warning to Offender",
       "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
       "credentials": {
         "telegramApi": {
-          "id": "C2pXCdmsl57tAD5R",
-          "name": "Telegram account 6"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -437,16 +437,16 @@
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        1376,
-        -144
+        -160,
+        480
       ],
-      "id": "e2cee768-a3d0-4b6b-b807-2d27a7f9020b",
+      "id": "31d0d728-cd4d-49bc-b741-27adbd489e57",
       "name": "Notify Reporter (Safe)",
       "webhookId": "8b1de547-2453-4e4f-bc0e-d1321714bd1a",
       "credentials": {
         "telegramApi": {
-          "id": "C2pXCdmsl57tAD5R",
-          "name": "Telegram account 6"
+          "id": "IsZ3zkMpbDyvRZVz",
+          "name": "Telegram account 4"
         }
       }
     },
@@ -477,11 +477,26 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -80,
-        16
+        -1616,
+        640
       ],
-      "id": "87ffe5e6-33ba-46d3-b387-a4717813171b",
+      "id": "497debd3-e1dc-48c7-b477-891ba4f7d31d",
       "name": "Is group message"
+    },
+    {
+      "parameters": {
+        "content": "# Telegram Group Moderation & Assistant Bot\n\nThis workflow manages a Telegram group by automating moderation, welcoming users, and answering questions using Google Vertex AI.\n\n## Core Features\n1. **Member Onboarding:** Detects new users (ignoring bots) and sends a localized welcome message explaining how to interact with the bot and the group.\n2. **AI Assistant:** Triggers when the bot is mentioned in a question, using a memory-backed Gemini AI agent to provide helpful responses.\n3. **Automated Moderation:** \n   - Users can reply to a message with `/report`.\n   - An AI Text Classifier evaluates the reported message to determine if it is \"Safe\" or \"Inappropriate\".\n   - **Inappropriate:** Automatically deletes the message, posts a public deletion notice, and privately warns the offender.\n   - **Safe:** Privately notifies the reporter that the message did not violate community guidelines.",
+        "height": 432,
+        "width": 992
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1840,
+        144
+      ],
+      "typeVersion": 1,
+      "id": "3462517c-e1b3-4f20-9f2e-c2effa4121ef",
+      "name": "Sticky Note"
     }
   ],
   "pinData": {},
@@ -633,11 +648,6 @@
         ]
       ]
     },
-    "Send Warning to Offender": {
-      "main": [
-        []
-      ]
-    },
     "Is group message": {
       "main": [
         [
@@ -653,15 +663,14 @@
   "active": false,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
+    "binaryMode": "separate"
   },
-  "versionId": "c3c2f4d1-64eb-4049-a30c-5d100b6d286b",
+  "versionId": "3a67d29e-1721-404c-871e-4c6b440e850e",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "64ab86774cb2c59d2c3c00fffeaed527e13724a09d0d1643a745ff6162492585"
+    "instanceId": "3e5f0f21cbbfb27a5a77459cdf3a08aeec2aeb55c9f15210c4daa721af225920"
   },
   "nodeGroups": [],
-  "id": "WBzUlMFfsiKY7kN0",
+  "id": "HKfh0Zmboax3IO46",
   "tags": []
 }
