@@ -1,226 +1,319 @@
 # 💼 JobPost X-Ray in LinkedIn
 
-> An intelligent n8n automation that deep-dives into any LinkedIn job post and delivers a rich, structured intelligence report straight to your Telegram chat — powered by **Apify** scrapers and **Google Gemini AI**.
-
----
-
-## 📋 Overview
-
-Send a LinkedIn job or post URL to a Telegram bot, and this workflow automatically:
-
-1. **Validates** the URL format
-2. **Scrapes** the post content, the author/HR profile, and the hiring company data
-3. **Analyzes** all collected data with a Gemini AI model
-4. **Delivers** a polished Markdown report back to your Telegram chat
-
-The report covers three dimensions: the **Opportunity** (role, requirements, how to apply), the **HR / Poster** profile (background, experience), and the **Company** (industry, size, locations, website).
-
----
-
-## 🔄 Workflow Diagram
-
-```
-Telegram Trigger
-       │
-       ▼
-Validate LinkedIn URL ──(invalid)──► Send Invalid URL Error
-       │
-       ▼
-Set User Preferences (language: ar/en)
-       │
-       ▼
-Is Valid URL? ──(no)──► Send Invalid URL Error
-       │ yes
-       ▼
-Send Process Status ("⏳ Fetching...")
-       │
-       ▼
-Apify: Fetch Post Data ──(error/empty)──► Send Fetch Post Error
-       │
-       ▼
-Is Data Empty? ──(empty)──► Send Fetch Post Error
-       │ has data
-       ▼
-Is Author a Company?
-    │                │
-   yes (company)    no (individual)
-    │                │
-    │         Apify: Fetch Author Data ──(error)──► Send Fetch Author Error
-    │                │
-    └────────────────┘
-                     │
-                     ▼
-            Is Data Empty?1 ──(empty)──► Send Fetch Author Error
-                     │ has data
-                     ▼
-            Format Company ID / URL
-                     │
-                     ▼
-            Apify: Fetch Company Data ──(error)──► Send Fetch company Error
-                     │
-                     ▼
-            Is Data Empty?2 ──(empty)──► Send Fetch company Error
-                     │ has data
-                     ▼
-            Change Process Status ("✅ Analyzing...")
-                     │
-                     ▼
-            Extract Key Data (Code node)
-                     │
-                     ▼
-            AI: Generate Report (Gemini via LLM Chain)
-                     │              │
-                   success        error
-                     │              │
-                     ▼              ▼
-               Send Report    Send AI Error
-```
+An AI-powered n8n automation workflow that transforms LinkedIn job post URLs into comprehensive intelligence reports — delivered directly to Telegram. It scrapes the post, the recruiter's profile, and the company's data, then uses Gemini AI to generate a structured analysis with actionable insights, and optionally drafts a personalized Gmail application email.
 
 ---
 
 ## ✨ Features
 
-| Feature | Details |
+| Feature | Description |
 |---|---|
-| 🔗 **URL Validation** | Regex-based check for `linkedin.com/posts`, `/feed/update`, and `/jobs/view` URLs |
-| 🤖 **Smart Author Detection** | Detects whether the post was made by an individual or a company page and routes scraping accordingly |
-| 🏢 **3-Layer Scraping** | Fetches post content, HR/recruiter profile, and company data via separate Apify actors |
-| 🧠 **AI Analysis** | Gemini 3.7 Flash generates a structured intelligence report from the collected data |
-| 🌐 **Bilingual Support** | Full Arabic (`ar`) and English (`en`) support for all bot messages and the final report |
-| ⚡ **Fail-Fast Design** | Every scrape step has an empty-data and error check to stop the flow early, saving Apify credits and AI tokens |
-| 📲 **Live Status Updates** | Sends an initial "⏳ Fetching..." message, then edits it in-place to "✅ Analyzing..." as the workflow progresses |
-| 🛡️ **Error Handling** | Distinct, user-friendly error messages for each failure point (invalid URL, private post, scrape failure, AI error) |
+| 🔗 **LinkedIn Post Scraping** | Extracts full job post content from any LinkedIn post or job URL |
+| 👤 **HR/Recruiter Profiling** | Fetches the poster's LinkedIn profile — name, headline, education, experience, and bio |
+| 🏢 **Company Intelligence** | Scrapes the employer's company page — industry, size, locations, website, and description |
+| 🤖 **AI-Powered Analysis** | Uses Google Gemini (with Anthropic Claude fallback) to generate a structured Markdown report |
+| 📩 **Auto Email Drafting** | Detects application emails in the post and offers to create a Gmail draft with your CV attached |
+| 🌐 **Bilingual Support** | Full Arabic (RTL) and English support — auto-detects language from the post content |
+| 🔐 **User Authentication** | Restricts bot access to a configurable whitelist of Telegram user IDs |
+| 🔗 **Short URL Expansion** | Automatically resolves `lnkd.in` shortened URLs before scraping |
+| ⚡ **Fail-Fast Architecture** | Halts immediately on scrape failure to save Apify credits and AI tokens |
+| 💡 **Cross-Check Insights** | Flags domain mismatches, role/industry inconsistencies, and missing critical fields |
+| 🛡️ **Zero-Hallucination Email** | AI extracts emails only when explicitly designated as the application channel in the original post |
 
 ---
 
-## 🧩 Nodes Breakdown
+## 🔄 Workflow Overview
 
-### Trigger & Input
-| Node | Type | Purpose |
+```
+Telegram Trigger
+    └── Parse User Input (JS)
+            └── Set User Preferences
+                    └── Switch (Route by Action)
+                            │
+                            ├── [Auth Error]      → Send Unauthorized Message
+                            │
+                            ├── [Send Email]      → Download CV (Google Drive)
+                            │                          └── Create Gmail Draft
+                            │                               └── Telegram: Draft Ready Notice
+                            │
+                            ├── [Generate Report] → Is Short URL? (lnkd.in)
+                            │                          ├── [Yes] → HTTP: Expand URL ─┐
+                            │                          └── [No] ─────────────────────┘
+                            │                                └── Send Process Status (⏳)
+                            │                                     └── Apify: Fetch Post Data
+                            │                                           ├── [Empty] → Send Post Error
+                            │                                           └── [OK]    → Is Author a Company?
+                            │                                                  ├── [Company] → Format Company ID ──┐
+                            │                                                  └── [Person]  → Apify: Fetch Author ┘
+                            │                                                          └── Format Company ID / URL
+                            │                                                               └── Apify: Fetch Company Data
+                            │                                                                    └── Update Status (✅)
+                            │                                                                         └── Extract Key Data (JS)
+                            │                                                                              └── AI: Generate Report
+                            │                                                                                   ├── [Error] → Send AI Error
+                            │                                                                                   └── [OK]    → Send Report
+                            │                                                                                        └── Is Owner?
+                            │                                                                                             └── Check HR Email
+                            │                                                                                                  ├── [Found]   → Ask to Draft Email (Inline KB)
+                            │                                                                                                  └── [Missing] → Notify No Email
+                            │
+                            └── [Invalid URL]     → Send Invalid URL Error
+```
+
+---
+
+## 🧩 Workflow Nodes
+
+### 1. `Telegram Trigger`
+- Listens for incoming **messages** and **callback queries** (inline button responses).
+- Entry point for both new LinkedIn URLs and email draft confirmations.
+
+### 2. `Parse User Input` *(JavaScript Code)*
+- Core input parsing node. Handles two distinct input types:
+  - **LinkedIn URL** — validates against a regex for `/posts/`, `/feed/update/`, `/jobs/view/`, and `lnkd.in` short links.
+  - **Callback Query** — detects `"true"/"false"` from the inline keyboard for email drafting.
+- Extracts hidden metadata (role, company, HR name, email) encoded in the callback message URL for downstream use.
+
+### 3. `Set User Preferences`
+- Sets global configuration variables:
+  - `lan` — Language code (`ar` or `en`)
+  - `user_name` — Your full name (used in email drafts)
+  - `CV url` — Google Drive link to your CV/resume
+  - `chat_ids` — Array of authorized Telegram user IDs
+
+### 4. `Switch` *(Smart Router)*
+- Routes traffic into four branches based on input context:
+  - **Authentication Error** → user's Telegram ID not in `chat_ids`
+  - **Sending Email** → callback query with `data === "true"`
+  - **Generate Report** → valid LinkedIn URL detected
+  - **Fallback** → invalid URL or unrecognized input
+
+---
+
+### 🔗 URL Resolution Branch
+
+#### `If` (Short URL Check)
+- Checks if the URL contains `lnkd.in` — LinkedIn's URL shortener.
+
+#### `HTTP: Expand URL`
+- Makes an HTTP request with redirects disabled to capture the `Location` header — resolving the full LinkedIn URL.
+
+---
+
+### 📊 Data Scraping Pipeline
+
+#### `Send Process Status`
+- Sends the user a loading message: *"⏳ Link received! I am currently fetching the post data..."*
+- This message is later **edited in-place** to show progress updates.
+
+#### `Apify: Fetch Post Data`
+- Calls the Apify LinkedIn Post Scraper actor (`d0DhjXPjkkwm4W5xK`).
+- Extracts the full post text, author info, and post metadata.
+- Routes to error output if the scrape fails.
+
+#### `Is Data Empty?`
+- Validates that post data was successfully returned before proceeding.
+- Halts with an error message if the post is private, deleted, or inaccessible.
+
+#### `Is Author a Company?`
+- Checks if the post author has a `company_id` — indicating the post was made by a company page rather than an individual.
+- **Company** → skips author scraping, goes directly to company data fetch.
+- **Person** → proceeds to fetch the individual author's profile.
+
+#### `Apify: Fetch Author Data`
+- Calls the Apify LinkedIn Profile Scraper (`LpVuK3Zozwuipa5bp`).
+- Fetches: name, headline, location, education, experience history, and about section.
+
+#### `Is Data Empty?1`
+- Validates author data. If empty, sends a notice but continues the flow.
+
+#### `Format Company ID / URL`
+- Resolves the company LinkedIn URL from the author's current position or the post's `company_id`.
+- Ensures the correct URL is passed to the company scraper.
+
+#### `Apify: Fetch Company Data`
+- Calls the Apify LinkedIn Company Scraper (`UwSdACBp7ymaGUJjS`).
+- Fetches: name, industry, employee count range, geographic presence, website, and description.
+
+#### `Is Data Empty?2`
+- Validates company data. If empty, sends a notice but continues the flow.
+
+#### `Change process Status`
+- **Edits** the original loading message to: *"✅ Data collected successfully! Now analyzing..."*
+
+---
+
+### 🤖 AI Analysis Engine
+
+#### `Extract Key Data` *(JavaScript Code)*
+- Consolidates data from all three Apify scrapers into a single clean JSON object:
+  - `post` — job description text and URL
+  - `hr` — name, headline, location, degree, approximate experience years, about
+  - `company` — name, industry, locations, size, website, description
+  - `language` — user's configured language preference
+
+#### `AI: Generate Report` *(LangChain LLM Chain)*
+- Uses a comprehensive system prompt (the **LinkedIn Opportunity Report Agent**) to:
+  - Parse the unstructured job description into structured sections
+  - Generate a formatted Markdown report with: role summary, responsibilities, requirements, application method, HR profile, company overview, and analytical flags
+  - Extract `opportunity_metadata` (role, company, HR name, email) for downstream automation
+- **Primary Model:** Google Gemini (`gemini-3.7-flash`) via Vertex AI
+- **Fallback Model:** Anthropic Claude Sonnet 5
+- Output is parsed via a **Structured Output Parser** into `telegram_report` + `metadata`.
+
+#### `Send Report`
+- Delivers the full AI-generated Markdown report to the Telegram user.
+
+#### `Send AI Error`
+- If the AI fails, sends: *"❌ The AI encountered an issue while analyzing the data. Please try again."*
+
+---
+
+### 📩 Email Drafting Branch
+
+#### `Is User the Owner`
+- Checks if the requesting user matches the configured owner ID.
+- Restricts email drafting to the bot owner only.
+
+#### `Check for HR Email`
+- Checks if the AI extracted a valid application email from the post metadata.
+- Routes to email prompt or "no email found" notice.
+
+#### `Ask to Draft Email`
+- Sends an **inline keyboard** to Telegram: *"Do you want us to send you an email?"* with **Yes/No** buttons.
+- The hidden metadata (role, company, HR name, email) is encoded in an invisible link within the message for stateless retrieval on callback.
+
+#### `Notify No Contact Email`
+- If no application email was found: *"ℹ️ The author did not include an email address for direct application."*
+
+#### `Download file` *(Google Drive)*
+- Downloads the user's CV/resume from the configured Google Drive URL.
+
+#### `Create Gmail Draft`
+- Creates a personalized Gmail draft with:
+  - **Subject:** `Application for {Role} - {Your Name}`
+  - **Body:** Professional cover letter addressing the HR/recruiter by name (falls back to `{Company} Team` or `Hiring Team`)
+  - **Attachment:** Your CV from Google Drive
+  - **To:** The extracted application email
+
+#### `Telegram: Draft Ready Notice`
+- Notifies the user: *"✅ Email draft is ready!"* with a direct **link to open the draft in Gmail**.
+
+---
+
+## ⚙️ Configuration
+
+Before activating the workflow, update the following settings:
+
+### 🔧 `Set User Preferences` Node
+| Variable | Default | Description |
 |---|---|---|
-| **Telegram Trigger** | Telegram Trigger | Listens for incoming messages containing a LinkedIn URL |
-| **Validate LinkedIn URL** | Code (JS) | Regex-extracts the URL from the message; sets `isValid` and `url` |
-| **Set User Preferences** | Set | Initializes the `lan` variable (currently hardcoded to `ar`; change to `en` if needed) |
-| **Is Valid URL?** | IF | Branches: valid URL → proceed; invalid → error message |
+| `lan` | `en` | Response language — `ar` (Arabic) or `en` (English) |
+| `user_name` | `Zaid Alradaideh` | Your full name — used in email draft subject and signature |
+| `CV url` | *(Google Drive link)* | Direct link to your CV/resume on Google Drive |
+| `chat_ids` | `[2076665816, 2068276244]` | Array of Telegram user IDs authorized to use the bot |
 
-### Scraping Layer (Apify)
-| Node | Apify Actor ID | Purpose |
+### 🔧 `Is User the Owner` Node
+- Update the owner check condition to match **your** Telegram user ID:
+```
+2076665816  →  <your Telegram user ID>
+```
+
+### 🔧 `Parse User Input` Node
+- The bot username detection is handled via regex. No changes needed unless you modify the LinkedIn URL pattern.
+
+---
+
+## 🔑 Required Credentials
+
+| Credential | Node(s) | Description |
 |---|---|---|
-| **Apify: Fetch Post Data** | `d0DhjXPjkkwm4W5xK` | Scrapes the LinkedIn post text, author name, and author `company_id` |
-| **Apify: Fetch Author Data** | `LpVuK3Zozwuipa5bp` | Scrapes the individual HR/recruiter's LinkedIn profile |
-| **Apify: Fetch Company Data** | `UwSdACBp7ymaGUJjS` | Scrapes the hiring company's LinkedIn page |
+| **Telegram Bot API** | All Telegram nodes | API token from [@BotFather](https://t.me/BotFather) |
+| **Apify API** | Fetch Post, Fetch Author, Fetch Company | [Apify](https://apify.com/) account API token |
+| **Google Service Account** | Google Vertex Chat Model | GCP service account with Vertex AI / Gemini API access |
+| **Anthropic API** | Anthropic Chat Model | API key for Claude (fallback LLM) |
+| **Gmail OAuth2** | Create Gmail Draft | Google OAuth2 credentials with Gmail scope |
+| **Google Drive OAuth2** | Download file | Google OAuth2 credentials with Drive read scope |
 
-### Routing & Data Prep
-| Node | Type | Purpose |
-|---|---|---|
-| **Is Author a Company?** | IF | Checks if `author.company_id` is set; skips author scrape if posting as a company |
-| **Is Data Empty? (×3)** | IF | Validates each Apify response is non-empty before continuing |
-| **Format Company ID / URL** | Set | Resolves the correct company LinkedIn URL from either author data or `company_id` |
-| **Extract Key Data** | Code (JS) | Distills raw Apify JSON into a compact, token-efficient object for the AI |
-| **Change Process Status** | Telegram | Edits the earlier "⏳ Fetching..." message to "✅ Analyzing..." |
+> **Tip:** The Apify actors used are paid per run. The fail-fast architecture ensures you're not charged for downstream scrapes if an earlier step fails.
 
-### AI & Output
-| Node | Type | Purpose |
-|---|---|---|
-| **Google Vertex Chat Model** | LM Chat (Vertex AI) | Provides Gemini 3.7 Flash as the language model |
-| **AI: Generate Report** | LLM Chain | Runs the AI prompt with the structured data to produce a Markdown report |
-| **Send Report** | Telegram | Sends the final Markdown report to the user (RTL-aware) |
+---
 
-### Error Handling
-| Node | Trigger Condition |
+## 🚀 Setup Instructions
+
+1. **Import** `workflow.json` into your n8n instance.
+2. **Configure credentials:**
+   - Add your Telegram Bot API token.
+   - Add your Apify API token.
+   - Add your Google Cloud Service Account (Vertex AI / Gemini enabled).
+   - Add your Anthropic API key (optional fallback).
+   - Configure Gmail and Google Drive OAuth2.
+3. **Update configuration** in the nodes listed in the [Configuration](#️-configuration) section above.
+4. **Upload your CV** to Google Drive and update the `CV url` in `Set User Preferences`.
+5. **Activate** the workflow.
+
+---
+
+## 🤖 Bot Usage
+
+| Action | How to Trigger |
 |---|---|
-| **Send Invalid URL Error** | URL doesn't match LinkedIn patterns |
-| **Send Fetch Post Error** | Apify post scrape returns an error or empty dataset |
-| **Send Fetch Author Error** | Apify author scrape returns an error or empty dataset |
-| **Send Fetch company Error** | Apify company scrape returns an error or empty dataset |
-| **Send Fetch company Error1** | AI generation step fails |
+| Analyze a LinkedIn post | Send the bot a LinkedIn post URL |
+| Analyze a LinkedIn job | Send the bot a LinkedIn job URL (`/jobs/view/...`) |
+| Analyze a shortened link | Send the bot an `lnkd.in` short URL |
+| Draft an application email | Tap **"Yes"** on the inline keyboard after the report |
+
+### Supported URL Formats
+```
+https://www.linkedin.com/posts/johndoe_hiring-software-engineer-1234567890-aB-C/
+https://www.linkedin.com/jobs/view/1234567890/
+https://www.linkedin.com/feed/update/urn:li:activity:1234567890/
+https://lnkd.in/abc123
+```
 
 ---
 
-## 🛠️ Prerequisites & Setup
+## 🌐 Language Support
 
-### Required Credentials
+The workflow supports **bilingual** output. Set `lan` in the `Set User Preferences` node:
 
-| Service | Credential Type | Where Used |
-|---|---|---|
-| **Telegram Bot** | `telegramApi` | All Telegram nodes |
-| **Apify** | `apifyApi` | All three Apify scraper nodes |
-| **Google Cloud (Vertex AI)** | `googleApi` (Service Account) | Google Vertex Chat Model node |
+- `en` → All bot messages and AI reports in **English**
+- `ar` → All bot messages and AI reports in **Arabic** (RTL enabled)
 
-### Step-by-Step Setup
-
-1. **Telegram Bot**
-   - Create a bot via [@BotFather](https://t.me/botfather) and get the token.
-   - Add it as a credential named `Telegram account 5` (or update the node references).
-
-2. **Apify Account**
-   - Sign up at [apify.com](https://apify.com) and get an API token.
-   - The following actors are used — ensure they are available in your Apify account:
-     - `d0DhjXPjkkwm4W5xK` — LinkedIn Post Scraper
-     - `LpVuK3Zozwuipa5bp` — LinkedIn Profile Scraper
-     - `UwSdACBp7ymaGUJjS` — LinkedIn Company Scraper
-
-3. **Google Vertex AI**
-   - Create a Google Cloud project and enable the Vertex AI API.
-   - Create a Service Account with `Vertex AI User` role and download the JSON key.
-   - Add it as a `Google Service Account` credential in n8n.
-   - Set the **Project ID** in the `Google Vertex Chat Model` node to match your GCP project.
-
-4. **Language Setting**
-   - Open the **Set User Preferences** node.
-   - Change the `lan` value from `ar` to `en` for English output, or implement dynamic detection logic.
+The AI report agent also performs **automatic language detection** from the post content as a fallback when the language setting is ambiguous.
 
 ---
 
-## 📨 How to Use
+## 🛠️ Tech Stack
 
-1. Start a chat with your Telegram bot.
-2. Send a message containing a LinkedIn job post or post URL, e.g.:
-   ```
-   https://www.linkedin.com/posts/johndoe_were-hiring-software-engineer-activity-1234567890-aB-C/
-   ```
-   or
-   ```
-   https://www.linkedin.com/jobs/view/1234567890/
-   ```
-3. The bot replies with `⏳ Link received! Fetching...`
-4. After scraping completes, the message updates to `✅ Data collected! Analyzing...`
-5. The final report is sent as a structured Markdown message covering:
-   - 🎯 The Opportunity (title, location, type, requirements, how to apply)
-   - 👤 The HR / Poster profile
-   - 🏢 The Company details
-   - 🚩 Quick insights & flags
+- **n8n** — Workflow automation platform
+- **Telegram Bot API** — User interaction, inline keyboards, and message effects
+- **Apify** — LinkedIn scraping (Post, Profile, Company actors)
+- **Google Gemini** (`gemini-3.7-flash`) via **Vertex AI** — Primary AI analysis engine
+- **Anthropic Claude** (`claude-sonnet-5`) — Fallback AI model
+- **LangChain (n8n nodes)** — LLM Chain, Structured Output Parser
+- **Gmail API** — Automated email draft creation with CV attachment
+- **Google Drive API** — CV/resume file download
+- **JavaScript** — Custom input parsing, data extraction, and URL metadata encoding
 
 ---
 
-## 💡 Design Decisions
+## 📂 File Structure
 
-### Fail-Fast Pattern
-Every Apify response is checked for emptiness *before* passing data downstream. This prevents wasted API calls and AI token costs when a post is private, deleted, or otherwise inaccessible.
-
-### Token Optimization
-The **Extract Key Data** code node distills three large Apify JSON blobs into a minimal, flat object before handing it to the AI — drastically reducing token usage.
-
-### Company vs. Individual Routing
-LinkedIn posts can be authored by either a person or a company page. The **Is Author a Company?** node checks for `company_id` in the post data to skip the individual profile scrape when unnecessary.
-
-### In-Place Status Updates
-Instead of flooding the chat with multiple messages, the workflow sends one status message and then edits it using `editMessageText` as the pipeline progresses.
+```
+JobPost X-Ray in Linkedin/
+├── workflow.json   # n8n workflow definition
+└── README.md       # This file
+```
 
 ---
 
-## ⚠️ Limitations
+## ⚠️ Notes & Limitations
 
-- **LinkedIn Privacy:** Private posts, posts behind login walls (for non-connections), or deleted posts will return empty data and trigger an error message.
-- **Apify Costs:** Each run consumes Apify compute units across up to 3 actor runs. Monitor your usage on the Apify dashboard.
-- **Rate Limits:** Heavy usage may trigger LinkedIn's anti-scraping measures, causing actor failures.
-- **Language Hardcoded:** The `lan` variable in **Set User Preferences** is currently set to `ar`. To support dynamic language switching, add per-user language detection or a preference command.
-
----
-
-## 🔗 Related
-
-- [n8n Documentation](https://docs.n8n.io)
-- [Apify Platform](https://apify.com)
-- [Google Vertex AI](https://cloud.google.com/vertex-ai)
-- [Telegram Bot API](https://core.telegram.org/bots/api)
+- **Apify costs** — Each scrape (Post, Author, Company) is a paid Apify actor run. The fail-fast design minimizes wasted credits.
+- **Private posts** — LinkedIn posts with restricted visibility cannot be scraped and will return an error.
+- **Email safety** — The AI is strictly prohibited from fabricating or guessing email addresses. Only emails explicitly marked as application channels in the post text are extracted.
+- **Owner-only email drafting** — The Gmail draft feature is restricted to the configured owner's Telegram ID for security.
+- **Rate limits** — Heavy usage may hit Apify or Telegram Bot API rate limits.
+- **Stateless callback handling** — Metadata for the email draft flow is encoded in a hidden URL within the Telegram message, making it fully stateless with no database required.
+- **Dual LLM fallback** — If the primary Gemini model fails, the Anthropic Claude model is available as a secondary option (requires separate credentials).
