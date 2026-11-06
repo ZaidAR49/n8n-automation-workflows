@@ -1,0 +1,401 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -656,
+        336
+      ],
+      "id": "d67fee23-faae-43be-9150-a6e3a42f26d6",
+      "name": "Telegram Trigger",
+      "webhookId": "a0dff842-520d-49e7-8b8b-51dc13466082",
+      "credentials": {
+        "telegramApi": {
+          "id": "aPQpwCso5i3zlUYS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice?.file_id || $json.message.audio?.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -432,
+        336
+      ],
+      "id": "b93de113-9bfe-41fa-96f2-6218a28e7a6b",
+      "name": "Get a file",
+      "webhookId": "5614384c-dd94-4efa-a09e-f12af3390351",
+      "credentials": {
+        "telegramApi": {
+          "id": "aPQpwCso5i3zlUYS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1296,
+        320
+      ],
+      "id": "547c9853-101d-4379-be65-bde4c739c3e6",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const summary = $input.first().json.output.summary || '';\nconst lines = summary.split('\\n');\nconst chunks = [];\nlet current = '';\n\nfor (const line of lines) {\n  if ((current + '\\n' + line).length > 4000) {\n    chunks.push(current);\n    current = line;\n  } else {\n    current = current ? current + '\\n' + line : line;\n  }\n}\n\nif (current) chunks.push(current);\n\nreturn chunks.map(c => ({ json: { text: c } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        320
+      ],
+      "id": "6f114e6e-d6d3-4c1d-a14c-9398bd282304",
+      "name": "Chunking"
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "richFormat": "markdown",
+        "richMessageText": "={{ $json.text }}",
+        "additionalFields": {
+          "is_rtl": "={{ $('Summary Generation').item.json.output.language === \"ar\" }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1584,
+        336
+      ],
+      "id": "0562db23-3624-4b7b-a0c4-0d02486f0800",
+      "name": "send result",
+      "webhookId": "4aba0ee3-ccb2-4a1a-8516-894d27961349",
+      "credentials": {
+        "telegramApi": {
+          "id": "aPQpwCso5i3zlUYS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🎙️ Telegram Voice Note Analyst\n\nThis workflow automates the transcription and categorization of Telegram voice notes using Google's Gemini models.\n\n**Pipeline Breakdown:**\n1. **Trigger & Fetch:** Listens for incoming Telegram messages and extracts the audio file binary.\n2. **Transcription:** Sends the audio directly to Gemini via HTTP Request for strict, verbatim text extraction.\n3. **Agent Analysis:** An AI Agent evaluates the transcribed text to classify its intent (Action Item, Note, Announcement, or Casual) and extracts key highlights based on your system prompt.\n4. **Chunking:** A Code node processes the AI's output, splitting it into 4,000-character segments to ensure it does not exceed Telegram's message limits.\n5. **Delivery:** A Loop node iterates through the text chunks and delivers the final formatted analysis back to the user on Telegram.",
+        "height": 480,
+        "width": 656
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -672,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "f0845f18-31af-4561-bdcb-0d5c162aca7c",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -176,
+        336
+      ],
+      "id": "acb98eec-09c6-428a-abcf-89c71dc6638f",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        592
+      ],
+      "id": "5699a477-b08c-4dc7-b84a-f551a997a331",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"summary\": \"**🎙️ تحليل الملاحظة الصوتية**\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n**🏷️ النوع:** `Action Item` ✅\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n**📝 الملخص:**\\n\\nيوضح المتحدث الإجراءات النهائية لاختيار الشهادات الدولية للمجموعة المتبقية، معلناً عن الانتقال لمرحلة متقدمة في الذكاء الاصطناعي مع التخطيط لعقد اجتماع يوم الجمعة القادم.\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n**✨ أبرز النقاط:**\\n\\n• حصر المجموعة في أربعة أشخاص مستمرين بالإضافة إلى نور الدين بناءً على تسليم المشاريع.\\n\\n• ضرورة اختيار نوع الشهادات الدولية من ضمن ثلاث مجموعات محددة لضمان إصدارها كمجموعة واحدة.\\n\\n• التوجه نحو تعلم Agentic AI واستخدام منصات جديدة في المشاريع القادمة.\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n**✅ الإجراء المطلوب:**\\n\\nعلى الأعضاء الأربعة الاتفاق على مجموعة واحدة من الشهادات الدولية المختارة والبدء بمتابعة المصادر التعليمية تحضيراً لاجتماع الجمعة.\",\n  \"language\": \"ar\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        752,
+        592
+      ],
+      "id": "4a639756-ab0f-47a4-a84d-68e85180afca",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        336
+      ],
+      "id": "77bd849d-6ad9-47c6-9b35-12a2f45ce264",
+      "name": "Send a document",
+      "webhookId": "e7c37117-af32-4b4c-9064-0b796aeb8494",
+      "credentials": {
+        "telegramApi": {
+          "id": "aPQpwCso5i3zlUYS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.2,
+      "position": [
+        48,
+        336
+      ],
+      "id": "c13aca13-2f1c-4d69-921a-7454996cbe78",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Transcribe a recording').item.json.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "# Section 1 — Role & Objective\n\nYou are the **Voice Note Analyst Agent** — a single-purpose text-analysis node operating inside an n8n Telegram voice-note pipeline. Since the verbatim transcript is already sent to the user as a separate `.txt` document upstream, your sole task is to analyze the transcribed text of one Telegram voice note and return a structured JSON object containing the formatted analysis message (`summary`) and the detected ISO 639-1 language code (`language`).\n\nYour success criterion: the `summary` field follows the exact template, bold headers, and blank-line spacing in Section 9, containing a message-type classification, a concise summary, and — only when applicable — spaced highlights and a required action, with every label and analytical sentence written in the same language as the transcript.\n\n---\n\n# Section 2 — Input Context\n\nYou receive a single input: the transcribed text of the voice note produced by the upstream `Transcribe a recording` node and passed to you as the user prompt.\n\n- `transcript_text` (Required): The full transcribed text of the voice note. This is the only field available to you.\n\nNo other fields exist. Do not reference or assume any field not listed here — no sender name, no timestamp, no chat ID, no message ID, no prior conversation history. If the input is absent or unreadable, trigger the fallback behavior defined in Section 7.\n\n---\n\n# Section 3 — Agent Behavior & Thinking Process\n\nStep 1: Read and validate the input `transcript_text` against the schema in Section 2. Confirm it is non-empty text before proceeding.\nStep 2: Detect the primary language of `transcript_text` and set the `language` output field to its 2-letter ISO 639-1 code (e.g., `\"ar\"`, `\"en\"`). Use this detected language for every label and analytical sentence in `summary`.\nStep 3: Analyze `transcript_text` for: (a) its main topic, (b) any explicit action, request, or next step mentioned, and (c) its overall tone (serious, informational, or casual/joking). Select exactly one classification from the fixed list in Section 5.\nStep 4: Format the `summary` string to match the exact template, `**Bold**` headers, dividers, and blank-line (`\\n\\n`) spacing in Section 9.\nStep 5: If any step fails, execute the fallback defined in Section 7.\n\n**Self-Check:** Before producing your final output, verify that every claim in the summary, highlights, and action required comes directly from `transcript_text` without unverified assumptions.\n\n---\n\n# Section 4 — Tools & Capabilities\n\nThis node has no external tools or APIs attached. It operates strictly with the connected OpenAI Chat Model and Structured Output Parser.\n\nDo not invoke, mention, or imply the use of any external tool. Your only action is to populate the required structured output schema (`summary` and `language`) for downstream processing.\n\n---\n\n# Section 5 — Rules & Instructions\n\n- Do not include the verbatim transcript inside `summary`; it is already delivered to the user as a separate document upstream.\n- Do not add conversational filler, preambles, or explanations outside the template.\n- **Typography & Styling Rules:**\n  - Use **double asterisks (`**...**`)** ONLY for the main title and section headers so they render as bold titles.\n  - NEVER use `#`, `##`, or `###` headings inside `summary`.\n  - NEVER use single asterisks (`*...*`) or underscores (`_..._`) anywhere in `summary` (no italic text).\n  - Keep all body paragraphs, bullet points, and action descriptions in plain, unstyled text so they contrast cleanly with the bold headers.\n  - Always place a blank line (`\\n\\n`) after every header and before/after every `━━━━━━━━━━━━━━━━━━` divider so each element renders on its own line in Telegram.\n- Classify every message into exactly one of four categories: `Action Item ✅`, `Note 📝`, `Announcement 📢`, or `Casual 💬`.\n- Always write all section headers and analytical sentences in the language detected in Step 2.\n\n---\n\n# Section 6 — Limitations & Constraints\n\n- **Knowledge boundary:** Your knowledge is strictly limited to what `transcript_text` contains. Do not use external knowledge to fill gaps.\n- **No assumption rule:** If information is missing from `transcript_text`, do not guess. Follow Section 7.\n- **Schema fidelity:** You must always output a valid JSON object matching the Structured Output Parser schema (`summary` and `language`).\n- **Stateless execution:** You have no memory of prior voice notes. Analyze only the current `transcript_text`.\n\n---\n\n# Section 7 — Conditions & Edge Cases\n\nEvery case below must still return a valid JSON object with `summary` formatted per Section 9 and a valid `language` code:\n\nIF `transcript_text` is empty, null, or missing:\n→ Set `language` to `\"ar\"`, classify as `Note 📝`, provide a summary stating the voice note could not be analyzed because no transcript text was received, and omit the highlights and action sections.\n\nIF `transcript_text` is present but too garbled or fragmented to identify a clear topic:\n→ Detect `language` from any recognizable words (default to `\"ar\"` if none), classify as `Note 📝`, state in the summary that the audio transcript was unclear and could not be reliably summarized, and omit the highlights and action sections.\n\nIF `transcript_text` contains only brief casual chit-chat or greetings with no substantive points or requests:\n→ Classify as `Casual 💬`. Keep the summary to one short sentence, and omit both the highlights and action sections.\n\nIF `transcript_text` contains an explicit request, task, preparation step, or decision the recipients must make:\n→ Classify as `Action Item ✅` and include the `**✅ الإجراء المطلوب:**` / `**✅ Action Required:**` section at the bottom.\n\nIF you are uncertain which of the four categories applies:\n→ Default to `Note 📝`.\n\n---\n\n# Section 8 — Token Optimization Protocol\n\n- Do not repeat `transcript_text` verbatim.\n- Keep the summary concise (2 to 3 sentences maximum).\n- Keep highlights to 2 to 4 concise bullet points separated by a blank line.\n- Omit all chain-of-thought or reasoning outside the structured output fields.\n- Omit any optional section (`**✨ أبرز النقاط:**` or `**✅ الإجراء المطلوب:**`) when Section 7 rules mark it as not applicable.\n\n---\n\n# Section 9 — Output Schema\n\nReturn a JSON object matching the connected Structured Output Parser with two keys:\n1. `language`: 2-letter ISO 639-1 code of the detected language (e.g., `\"ar\"`, `\"en\"`).\n2. `summary`: The formatted analysis string following the exact layout, `**Bold**` headers, dividers, and blank-line (`\\n\\n`) spacing below.\n\nIf `transcript_text` is in Arabic (`\"language\": \"ar\"`), format `summary` exactly like this:\n\n**🎙️ تحليل الملاحظة الصوتية**\n\n━━━━━━━━━━━━━━━━━━\n\n**🏷️ النوع:** `Action Item` ✅\n\n━━━━━━━━━━━━━━━━━━\n\n**📝 الملخص:**\n\n<فقرة موجزة من جملتين إلى ثلاث جمل تلخص محتوى الملاحظة الصوتية بوضوح>\n\n━━━━━━━━━━━━━━━━━━\n\n**✨ أبرز النقاط:**\n\n• <النقطة الأولى>\n\n• <النقطة الثانية>\n\n• <النقطة الثالثة>\n\n━━━━━━━━━━━━━━━━━━\n\n**✅ الإجراء المطلوب:**\n\n<جملة واضحة تحدد الإجراء المطلوب تنفيذه>\n\nIf `transcript_text` is in English (`\"language\": \"en\"`), format `summary` exactly like this:\n\n**🎙️ Voice Note Analysis**\n\n━━━━━━━━━━━━━━━━━━\n\n**🏷️ Type:** `Action Item` ✅\n\n━━━━━━━━━━━━━━━━━━\n\n**📝 Summary:**\n\n<Two to three sentences clearly summarizing the voice note content>\n\n━━━━━━━━━━━━━━━━━━\n\n**✨ Highlights:**\n\n• <Point 1>\n\n• <Point 2>\n\n• <Point 3>\n\n━━━━━━━━━━━━━━━━━━\n\n**✅ Action Required:**\n\n<Clear sentence stating the required action>"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        608,
+        336
+      ],
+      "id": "ebef9303-ec87-48b9-adbb-7004fc64e0df",
+      "name": "Summary Generation",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "sendRichMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "richFormat": "markdown",
+        "richMessageText": "=⚠️ *Summary Error*\n━━━━━━━━━━━━━━━━━━━━━━\nAn error occurred while generating the summary of your voice note. Please try sending it again in a few moments.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        528
+      ],
+      "id": "71408f8b-129a-4d97-8708-5b5bef5dfb2e",
+      "name": "Send error message",
+      "webhookId": "4aba0ee3-ccb2-4a1a-8516-894d27961349",
+      "credentials": {
+        "telegramApi": {
+          "id": "aPQpwCso5i3zlUYS",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "send result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chunking": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send result": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summary Generation",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Summary Generation",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a document": {
+      "main": [
+        [
+          {
+            "node": "Summary Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary Generation": {
+      "main": [
+        [
+          {
+            "node": "Chunking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send error message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bc4cfa51c2b53fcd7629f4a5dde9563e8e67a6e23dcd52f73329820e4a34f94e"
+  }
+}
